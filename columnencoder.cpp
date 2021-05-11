@@ -17,7 +17,15 @@
 
 #include "columnencoder.h"
 #include <regex>
+#ifdef BUILDING_JASP
 #include "log.h"
+#define LOGGER Log::log()
+#else
+#include <iostream>
+#define LOGGER std::cout
+#endif
+
+
 
 ColumnEncoder				*	ColumnEncoder::_columnEncoder				= nullptr;
 std::set<ColumnEncoder*>	*	ColumnEncoder::_otherEncoders				= nullptr;
@@ -89,7 +97,7 @@ ColumnEncoder::~ColumnEncoder()
 			delete colEnc;
 
 		if(_otherEncoders->size() > 0)
-			Log::log() << "Something went wrong removing other ColumnEncoders..." << std::endl;
+			LOGGER << "Something went wrong removing other ColumnEncoders..." << std::endl;
 
 		delete _otherEncoders;
 		_otherEncoders = nullptr;
