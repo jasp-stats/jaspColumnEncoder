@@ -80,6 +80,11 @@ public:
 			///Replace all occurences of encoded columnNames in a string by their decoded versions in all json-names and string-values, regardless of word boundaries or parentheses.
 	static	void				decodeJson(Json::Value & json, bool replaceNames = true);
 
+	static	void				encodeColumnNamesinOptions(Json::Value & options);
+
+private:
+	static	void 				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
+
 private:
 	static	std::string			replaceAll(std::string		text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names);
 	static	void				replaceAll(Json::Value &	json, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, bool replaceNames);

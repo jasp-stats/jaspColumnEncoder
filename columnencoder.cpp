@@ -488,3 +488,59 @@ ColumnEncoder::colVec ColumnEncoder::columnNamesEncoded()
 {
 	return _columnEncoder ? _columnEncoder->_encodedNames : colVec();
 }
+
+
+void ColumnEncoder::encodeColumnNamesinOptions(Json::Value & options)
+{
+	_encodeColumnNamesinOptions(options, options[".meta"]);
+}
+
+void ColumnEncoder::_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta)
+{
+	if(meta.isNull())
+		return;
+	
+	bool	encodePlease	= meta.isObject() && meta.get("shouldEncode",	false).asBool(),
+			isRCode			= meta.isObject() && meta.get("rCode",			false).asBool();
+
+	switch(options.type())
+	{
+	case Json::arrayValue:
+		if(encodePlease)
+			columnEncoder()->encodeJson(options, false); //If we already think we have columnNames just change it all
+		
+		else if(meta.type() == Json::arrayValue)
+			for(size_t i=0; i<options.size() && i < meta.size(); i++)
+				_encodeColumnNamesinOptions(options[i], meta[i]);
+		
+		else if(isRCode)
+			for(size_t i=0; i<options.size(); i++)
+				if(options[i].isString())
+					options[i] = columnEncoder()->encodeRScript(options[i].asString());
+	
+		return;
+
+	case Json::objectValue:
+		for(const std::string & memberName : options.getMemberNames())
+			if(memberName != ".meta" && meta.isMember(memberName))
+				_encodeColumnNamesinOptions(options[memberName], meta[memberName]);
+		
+			else if(isRCode && options[memberName].isString())
+				options[memberName] = columnEncoder()->encodeRScript(options[memberName].asString());
+		
+			else if(encodePlease)
+				columnEncoder()->encodeJson(options, false); //If we already think we have columnNames just change it all I guess?
+		
+		return;
+
+	case Json::stringValue:
+			
+			if(isRCode)				options = columnEncoder()->encodeRScript(options.asString());
+			else if(encodePlease)	options = columnEncoder()->encodeAll(options.asString());
+			
+		return;
+
+	default:
+		return;
+	}
+}
