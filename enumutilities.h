@@ -5,7 +5,6 @@
 //I expanded it a bit and added from string -> enum and QString stuff
 //Also made sure the methods and map and all are defined only in the cpp file (when defining ENUM_DECLARATION_CPP first that is)
 
-#include "stringutils.h"
 #include <algorithm>
 #include <sstream>
 #include <string>
@@ -15,6 +14,20 @@
 #ifdef JASP_USES_QT_HERE
 #include <QString>
 #endif
+
+
+//Copied from jasp-desktop/Common/stringutils.h
+inline std::vector<std::string> colEncoder_splitString(const std::string & str, const char sep = ',')
+{
+	std::vector<std::string>	vecString;
+	std::string					item;
+	std::stringstream			stringStream(str);
+
+	while (std::getline(stringStream, item, sep))
+		vecString.push_back(item);
+
+	return vecString;
+}
 
 struct missingEnumVal  : public std::runtime_error
 {
@@ -124,7 +137,7 @@ template <typename T> std::map<T, std::string> generateEnumMap(std::string strMa
 	STRING_REMOVE_CHAR(strMap, ' ');
 	STRING_REMOVE_CHAR(strMap, '(');
 
-	std::vector<std::string> enumTokens(stringUtils::splitString(strMap));
+	std::vector<std::string> enumTokens(colEncoder_splitString(strMap));
 	std::map<T, std::string> retMap;
 	T inxMap;
 
@@ -137,7 +150,7 @@ template <typename T> std::map<T, std::string> generateEnumMap(std::string strMa
 			enumName = tokenString;
 		else
 		{
-			std::vector<std::string> enumNameValue(stringUtils::splitString(tokenString, '='));
+			std::vector<std::string> enumNameValue(colEncoder_splitString(tokenString, '='));
 			enumName = enumNameValue[0];
 			//inxMap = static_cast<T>(enumNameValue[1]);
 			if (std::is_unsigned<T>::value)		inxMap = static_cast<T>(std::stoull(enumNameValue[1], 0, 0));
