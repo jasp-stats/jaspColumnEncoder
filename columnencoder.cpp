@@ -21,8 +21,8 @@
 #include "log.h"
 #define LOGGER Log::log()
 #else
-#include <iostream>
-#define LOGGER std::cout
+#include <Rcpp>
+#define LOGGER Rcpp::Rcout
 #endif
 
 
