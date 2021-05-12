@@ -21,7 +21,7 @@
 #include "log.h"
 #define LOGGER Log::log()
 #else
-#include <Rcpp>
+#include <Rcpp.h>
 #define LOGGER Rcpp::Rcout
 #endif
 
@@ -510,11 +510,11 @@ void ColumnEncoder::_encodeColumnNamesinOptions(Json::Value & options, Json::Val
 			columnEncoder()->encodeJson(options, false); //If we already think we have columnNames just change it all
 		
 		else if(meta.type() == Json::arrayValue)
-			for(size_t i=0; i<options.size() && i < meta.size(); i++)
+			for(int i=0; i<options.size() && i < meta.size(); i++)
 				_encodeColumnNamesinOptions(options[i], meta[i]);
 		
 		else if(isRCode)
-			for(size_t i=0; i<options.size(); i++)
+			for(int i=0; i<options.size(); i++)
 				if(options[i].isString())
 					options[i] = columnEncoder()->encodeRScript(options[i].asString());
 	
