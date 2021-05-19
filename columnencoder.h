@@ -26,7 +26,7 @@
 #ifdef BUILDING_JASP
 #include "jsonredirect.h"
 #else
-#include <json/json.h>
+#include "lib_json/json.h"
 #endif
 
 ///Class to "encode" the names of columns
