@@ -40,7 +40,7 @@ class ColumnEncoder
 
 private:						ColumnEncoder() { invalidateAll(); }
 public:
-								ColumnEncoder(std::string prefix, std::string postfix = "._Encoded");
+								ColumnEncoder(std::string prefix, std::string postfix = "_Encoded");
 								ColumnEncoder(const std::map<std::string, std::string> & decodeDifferently);
 								~ColumnEncoder();
 	static ColumnEncoder	*	columnEncoder();
@@ -110,8 +110,8 @@ private:
 	colVec						_originalNames,
 								_encodedNames;
 
-	std::string					_encodePrefix  = "JaspColumn_.",
-								_encodePostfix = "._Encoded";
+	std::string					_encodePrefix  = "JaspColumn_",
+								_encodePostfix = "_Encoded";
 };
 
 #endif // COLUMNENCODER_H

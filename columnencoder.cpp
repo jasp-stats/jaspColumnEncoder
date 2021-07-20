@@ -64,7 +64,7 @@ ColumnEncoder::ColumnEncoder(std::string prefix, std::string postfix)
 }
 
 ColumnEncoder::ColumnEncoder(const std::map<std::string, std::string> & decodeDifferently)
-	: _encodePrefix("JASPColumn_."), _encodePostfix("._For_Replacement")
+	: _encodePrefix("JASPColumn_"), _encodePostfix("_For_Replacement")
 {
 
 	std::vector<std::string> originalNames;
