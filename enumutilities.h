@@ -1,9 +1,10 @@
 #ifndef ENUMUTILITIES_H
 #define ENUMUTILITIES_H
 
-//See https://stackoverflow.com/a/48820063
-//I expanded it a bit and added from string -> enum and QString stuff
-//Also made sure the methods and map and all are defined only in the cpp file (when defining ENUM_DECLARATION_CPP first that is)
+// See https://stackoverflow.com/a/48820063
+// I expanded it a bit and added from string -> enum and QString stuff
+// Also made sure the methods and map and all are defined only in the cpp file (when defining ENUM_DECLARATION_CPP first that is)
+// In case it isn't 100% clear what this file does, it basically generates a class enum with conversion to and from (q)strings and related utilities.
 
 #include "stringutils.h"
 #include <algorithm>

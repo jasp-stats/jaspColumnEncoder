@@ -12,7 +12,9 @@
 typedef std::set<std::string>		stringset;
 typedef std::vector<std::string>	stringvec;
 
-///All functions are inline and here to avoid problems through the mixing of MSVC and GCC on Windows. (Because this code can be used from R-Interface which can only be compiled with RTools and Common with MSVC...)
+/// This class groups a variety of string related utility functions for use throughout JASP
+/// All functions are inline and here to avoid problems through the mixing of MSVC and GCC on Windows. 
+/// (Because this code can be used from R-Interface which can only be compiled with RTools and Common with MSVC...)
 class stringUtils
 {
 public:    

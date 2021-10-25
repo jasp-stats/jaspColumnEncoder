@@ -29,9 +29,10 @@
 #include "lib_json/json.h"
 #endif
 
-///Class to "encode" the names of columns
+/// Class to "encode" the names of columns
 /// It can be used both directly, through columnEncoder()->, in that scenario it only en- and decodes actual columnNames from the dataset.
 /// If you want to en- or decode other names then you instantiate a separate copy and use it's functions.
+/// It will then also use the columnnames if they are set btw.
 class ColumnEncoder
 {
 	typedef std::map<std::string, std::string>	colMap;
