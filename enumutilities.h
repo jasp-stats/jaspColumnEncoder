@@ -30,17 +30,19 @@ struct missingEnumVal  : public std::runtime_error
 	{																											\
 		__VA_ARGS__																								\
 	};																											\
-	std::ostream	&operator<<(std::ostream &os, E enumTmp);													\
-	size_t			operator*(E enumTmp);																		\
-	std::string		operator~(E enumTmp);																		\
-	std::string		operator+(std::string &&str, E enumTmp);													\
-	std::string		operator+(E enumTmp, std::string &&str);													\
-	std::string		&operator+=(std::string &str, E enumTmp);													\
-	E				operator++(E &enumTmp);																		\
-	E				E##FromString(std::string enumName);														\
-	E				E##FromString(std::string enumName, E devaultValue);										\
-	std::string		E##ToString(E enumVal);																		\
-	bool			valid##E(T value);
+	std::ostream						&operator<<(std::ostream &os, E enumTmp);								\
+	size_t								operator*(E enumTmp);													\
+	std::string							operator~(E enumTmp);													\
+	std::string							operator+(std::string &&str, E enumTmp);								\
+	std::string							operator+(E enumTmp, std::string &&str);								\
+	std::string							&operator+=(std::string &str, E enumTmp);								\
+	E									operator++(E &enumTmp);													\
+	E									E##FromString(std::string enumName);									\
+	E									E##FromString(std::string enumName, E devaultValue);					\
+	std::string							E##ToString(E enumVal);													\
+	const std::map<T, std::string>	&	E##ToStringMap();														\
+	const std::map<std::string, T>	&	E##FromStringMap();														\
+	bool								E##Valid(T value);
 
 #define DECLARE_ENUM_METHODS_WITH_TYPE_BASE(E, T, ...)															\
 	std::map<T, std::string>	E##MapName(generateEnumMap<T>(#__VA_ARGS__));									\
@@ -74,7 +76,7 @@ struct missingEnumVal  : public std::runtime_error
 	E E##FromString(std::string enumName)																		\
 	{																											\
 		if(E##FromNameMap.count(enumName) == 0) 																\
-			throw missingEnumVal(#E, enumName);																\
+			throw missingEnumVal(#E, enumName);																	\
 		return (E)E##FromNameMap.at(enumName); 																	\
 	}																											\
 	E E##FromString(std::string enumName, E defaultValue)														\
@@ -84,7 +86,9 @@ struct missingEnumVal  : public std::runtime_error
 		return (E)E##FromNameMap.at(enumName); 																	\
 	}																											\
 	std::string E##ToString(E enumVal)		{ return ~enumVal; }												\
-	bool		valid##E(T value) { return (E##MapName.find(value) != E##MapName.end()); }
+	const std::map<T, std::string>	&	E##ToStringMap()		{ return E##MapName;		}					\
+	const std::map<std::string, T>	&	E##FromStringMap()		{ return E##FromNameMap;	}					\
+	bool								E##Valid(T value) { return (E##MapName.find(value) != E##MapName.end()); }
 
 #ifdef JASP_USES_QT_HERE
 	#define DECLARE_ENUM_WITH_TYPE_HEADER(E, T, ...)																						\
