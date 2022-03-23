@@ -24,7 +24,7 @@
 #include <set>
 
 // #ifdef BUILDING_JASP
-// #include "jsonredirect.h"
+// #include <json/json.h>
 // #else
 #include "json/json.h"
 // #endif
