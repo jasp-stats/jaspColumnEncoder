@@ -23,11 +23,7 @@
 #include <map>
 #include <set>
 
-#ifdef BUILDING_JASP
-#include "jsonredirect.h"
-#else
-#include "lib_json/json.h"
-#endif
+#include <json/json.h>
 
 /// Class to "encode" the names of columns
 /// It can be used both directly, through columnEncoder()->, in that scenario it only en- and decodes actual columnNames from the dataset.
