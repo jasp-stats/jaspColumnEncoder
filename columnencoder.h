@@ -76,7 +76,7 @@ public:
 	static	std::string			decodeAll(const std::string & text) { return replaceAll(text, decodingMap(), encodedNames());  }
 
 			///Replace all occurences of columnNames in a string by their encoded versions in all json-names and string-values, regardless of word boundaries or parentheses.
-	static	void				encodeJson(Json::Value & json, bool replaceNames = false);
+	static	void				encodeJson(Json::Value & json, bool replaceNames = false, bool replaceStrict = false);
 
 			///Replace all occurences of encoded columnNames in a string by their decoded versions in all json-names and string-values, regardless of word boundaries or parentheses.
 	static	void				decodeJson(Json::Value & json, bool replaceNames = true);
@@ -87,8 +87,10 @@ private:
 	static	void 				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
 
 private:
-	static	std::string			replaceAll(std::string		text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names);
-	static	void				replaceAll(Json::Value &	json, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, bool replaceNames);
+	static	std::string			replaceAll(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names);
+	static  std::string			replaceAllStrict(const std::string & text, const std::map<std::string, std::string> & map);
+
+	static	void				replaceAll(Json::Value & json, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, bool replaceNames, bool replaceStrict);
 	static	std::vector<size_t>	getPositionsColumnNameMatches(const std::string & text, const std::string & columnName);
 			void				collectExtraEncodingsFromMetaJson(const Json::Value & in, std::vector<std::string> & namesCollected) const;
 	static	void				sortVectorBigToSmall(std::vector<std::string> & vec);

@@ -245,8 +245,16 @@ bool ColumnEncoder::shouldDecode(const std::string & in)
 	return _decodingMap.count(in) > 0;
 }
 
+std::string	ColumnEncoder::replaceAllStrict(const std::string & text, const std::map<std::string, std::string> & map)
+{
+	if (map.count(text) > 0)
+		return map.at(text);
+	else
+		return text;
+}
+
 std::string	ColumnEncoder::replaceAll(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names)
-{		
+{
 	size_t foundPos = 0;
 
 	while(foundPos < std::string::npos)
@@ -355,28 +363,28 @@ std::vector<size_t> ColumnEncoder::getPositionsColumnNameMatches(const std::stri
 	return positions;
 }
 
-void ColumnEncoder::encodeJson(Json::Value & json, bool replaceNames)
+void ColumnEncoder::encodeJson(Json::Value & json, bool replaceNames, bool replaceStrict)
 {
 	//std::cout << "Json before encoding:\n" << json.toStyledString();
-	replaceAll(json, encodingMap(), originalNames(), replaceNames);
+	replaceAll(json, encodingMap(), originalNames(), replaceNames, replaceStrict);
 	//std::cout << "Json after encoding:\n" << json.toStyledString() << std::endl;
 }
 
 void ColumnEncoder::decodeJson(Json::Value & json, bool replaceNames)
 {
 	//std::cout << "Json before encoding:\n" << json.toStyledString();
-	replaceAll(json, decodingMap(), encodedNames(), replaceNames);
+	replaceAll(json, decodingMap(), encodedNames(), replaceNames, false);
 	//std::cout << "Json after encoding:\n" << json.toStyledString() << std::endl;
 }
 
 
-void ColumnEncoder::replaceAll(Json::Value & json, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, bool replaceNames)
+void ColumnEncoder::replaceAll(Json::Value & json, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, bool replaceNames, bool replaceStrict)
 {
 	switch(json.type())
 	{
 	case Json::arrayValue:
 		for(Json::Value & option : json)
-			replaceAll(option, map, names, replaceNames);
+			replaceAll(option, map, names, replaceNames, replaceStrict);
 		return;
 
 	case Json::objectValue:
@@ -385,11 +393,11 @@ void ColumnEncoder::replaceAll(Json::Value & json, const std::map<std::string, s
 
 		for(const std::string & optionName : json.getMemberNames())
 		{
-			replaceAll(json[optionName], map, names, replaceNames);
+			replaceAll(json[optionName], map, names, replaceNames, replaceStrict);
 
 			if(replaceNames)
 			{
-				std::string replacedName = replaceAll(optionName, map, names);
+				std::string replacedName = replaceStrict ? replaceAllStrict(optionName, map) : replaceAll(optionName, map, names);
 
 				if(replacedName != optionName)
 					changedMembers[optionName] = replacedName;
@@ -406,7 +414,7 @@ void ColumnEncoder::replaceAll(Json::Value & json, const std::map<std::string, s
 	}
 
 	case Json::stringValue:
-			json = replaceAll(json.asString(), map, names);
+		json = replaceStrict ? replaceAllStrict(json.asString(), map) : replaceAll(json.asString(), map, names);
 		return;
 
 	default:
@@ -507,7 +515,7 @@ void ColumnEncoder::_encodeColumnNamesinOptions(Json::Value & options, Json::Val
 	{
 	case Json::arrayValue:
 		if(encodePlease)
-			columnEncoder()->encodeJson(options, false); //If we already think we have columnNames just change it all
+			columnEncoder()->encodeJson(options, false, true); //If we already think we have columnNames just change it all
 		
 		else if(meta.type() == Json::arrayValue)
 			for(int i=0; i<options.size() && i < meta.size(); i++)
@@ -529,7 +537,7 @@ void ColumnEncoder::_encodeColumnNamesinOptions(Json::Value & options, Json::Val
 				options[memberName] = columnEncoder()->encodeRScript(options[memberName].asString());
 		
 			else if(encodePlease)
-				columnEncoder()->encodeJson(options, false); //If we already think we have columnNames just change it all I guess?
+				columnEncoder()->encodeJson(options, false, true); //If we already think we have columnNames just change it all I guess?
 		
 		return;
 
