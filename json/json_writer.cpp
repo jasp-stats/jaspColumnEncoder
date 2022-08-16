@@ -136,6 +136,10 @@ String valueToString(double value, bool useSpecialFloats,
                [isnan(value) ? 0 : (value < 0) ? 1 : 2];
   }
 
+  //Avoid subnormal representation as istream fails on it, thus making roundtrip impossible https://stackoverflow.com/a/48087390
+  if(value < std::numeric_limits<double>::min())
+	value = abs(value) > (std::numeric_limits<double>::min()/2) ? std::numeric_limits<double>::min() * !signbit(value): 0;
+
   String buffer(size_t(36), '\0');
   while (true) {
     int len = jsoncpp_snprintf(
