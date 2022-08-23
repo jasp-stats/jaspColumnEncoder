@@ -138,7 +138,7 @@ String valueToString(double value, bool useSpecialFloats,
 
 #ifdef __clang__
   //Avoid subnormal representation as istream fails on it, thus making roundtrip impossible https://stackoverflow.com/a/48087390
-  if(value < std::numeric_limits<double>::min())
+  if(abs(value) < std::numeric_limits<double>::min())
 	  value = abs(value) > (std::numeric_limits<double>::min()/2) ? std::numeric_limits<double>::min() * !signbit(value): 0;
 #endif
 
