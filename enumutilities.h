@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cstdint>
 
 #ifdef JASP_USES_QT_HERE
 #include <QString>
