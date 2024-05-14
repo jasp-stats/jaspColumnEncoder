@@ -5,6 +5,11 @@
 // I expanded it a bit and added from string -> enum and QString stuff
 // Also made sure the methods and map and all are defined only in the cpp file (when defining ENUM_DECLARATION_CPP first that is)
 // In case it isn't 100% clear what this file does, it basically generates a class enum with conversion to and from (q)strings and related utilities.
+//
+// To use, include this in the header and then in the sources"
+// #define ENUM_DECLARATION_CPP
+// #include "yourheaderhere>
+// Thats all!
 
 #include "stringutils.h"
 #include <algorithm>
@@ -12,7 +17,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <cstdint>
 
 #ifdef JASP_USES_QT_HERE
 #include <QString>
@@ -130,7 +134,7 @@ template <typename T> std::map<T, std::string> generateEnumMap(std::string strMa
 	STRING_REMOVE_CHAR(strMap, ' ');
 	STRING_REMOVE_CHAR(strMap, '(');
 
-	std::vector<std::string> enumTokens(stringUtils::splitString(strMap));
+	std::vector<std::string> enumTokens(stringUtils::split(strMap));
 	std::map<T, std::string> retMap;
 	T inxMap;
 
@@ -143,9 +147,13 @@ template <typename T> std::map<T, std::string> generateEnumMap(std::string strMa
 			enumName = tokenString;
 		else
 		{
-			std::vector<std::string> enumNameValue(stringUtils::splitString(tokenString, '='));
+			std::vector<std::string> enumNameValue(stringUtils::split(tokenString, '='));
 			enumName = enumNameValue[0];
 			//inxMap = static_cast<T>(enumNameValue[1]);
+#ifdef JASP_USES_QT_HERE
+			if(stringUtils::trim(enumNameValue[1]) == "Qt::UserRole")	inxMap = static_cast<T>(Qt::UserRole);
+			else
+#endif
 			if (std::is_unsigned<T>::value)		inxMap = static_cast<T>(std::stoull(enumNameValue[1], 0, 0));
 			else								inxMap = static_cast<T>(std::stoll(enumNameValue[1], 0, 0));
 		}
