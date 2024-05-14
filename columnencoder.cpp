@@ -16,6 +16,7 @@
 //
 
 #include "columnencoder.h"
+#include "stringutils.h"
 #include <regex>
 #ifdef BUILDING_JASP
 #include "log.h"
@@ -31,6 +32,7 @@ ColumnEncoder				*	ColumnEncoder::_columnEncoder				= nullptr;
 std::set<ColumnEncoder*>	*	ColumnEncoder::_otherEncoders				= nullptr;
 bool							ColumnEncoder::_encodingMapInvalidated		= true;
 bool							ColumnEncoder::_decodingMapInvalidated		= true;
+bool							ColumnEncoder::_decoSafeMapInvalidated		= true;
 bool							ColumnEncoder::_originalNamesInvalidated	= true;
 bool							ColumnEncoder::_encodedNamesInvalidated		= true;
 
@@ -47,6 +49,7 @@ void ColumnEncoder::invalidateAll()
 {
 	_encodingMapInvalidated		= true;
 	_decodingMapInvalidated		= true;
+	_decoSafeMapInvalidated		= true;
 	_originalNamesInvalidated	= true;
 	_encodedNamesInvalidated	= true;
 }
@@ -110,24 +113,26 @@ std::string ColumnEncoder::encode(const std::string &in)
 {
 	if(in == "") return "";
 
-	if(_encodingMap.count(in) == 0)
+	if(encodingMap().count(in) == 0)
 		throw std::runtime_error("Trying to encode columnName but '" + in + "' is not a columnName!");
 
-	return _encodingMap[in];
+	return encodingMap().at(in);
 }
 
 std::string ColumnEncoder::decode(const std::string &in)
 {
 	if(in == "") return "";
 
-	if(_decodingMap.count(in) == 0)
+	if(decodingMap().count(in) == 0)
 		throw std::runtime_error("Trying to decode columnName but '" + in + "' is not an encoded columnName!");
 
-	return _decodingMap[in];
+	return decodingMap().at(in);
 }
 
 void ColumnEncoder::setCurrentNames(const std::vector<std::string> & names)
 {
+	//LOGGER << "ColumnEncoder::setCurrentNames(#"<< names.size() << ")" << std::endl;
+
 	_encodingMap.clear();
 	_decodingMap.clear();
 
@@ -188,6 +193,31 @@ const ColumnEncoder::colMap	&	ColumnEncoder::decodingMap()
 						map[keyVal.first] = keyVal.second;
 
 		_decodingMapInvalidated = false;
+	}
+
+	return map;
+}
+
+
+const ColumnEncoder::colMap	&	ColumnEncoder::decodingMapSafeHtml()
+{
+	static ColumnEncoder::colMap map;
+
+	if(_decoSafeMapInvalidated)
+	{
+		map.clear();
+		
+		for(const auto & keyVal : _columnEncoder->_decodingMap)
+			if(map.count(keyVal.first) == 0)
+				map[keyVal.first] = stringUtils::escapeHtmlStuff(keyVal.second, true);
+
+		if(_otherEncoders)
+			for(const ColumnEncoder * other : *_otherEncoders)
+				for(const auto & keyVal : other->_decodingMap)
+					if(map.count(keyVal.first) == 0)
+						map[keyVal.first] = stringUtils::escapeHtmlStuff(keyVal.second, true); // replace square brackets for https://github.com/jasp-stats/jasp-issues/issues/2625
+
+		_decoSafeMapInvalidated = false;
 	}
 
 	return map;
@@ -363,6 +393,7 @@ std::vector<size_t> ColumnEncoder::getPositionsColumnNameMatches(const std::stri
 	return positions;
 }
 
+
 void ColumnEncoder::encodeJson(Json::Value & json, bool replaceNames, bool replaceStrict)
 {
 	//std::cout << "Json before encoding:\n" << json.toStyledString();
@@ -375,6 +406,11 @@ void ColumnEncoder::decodeJson(Json::Value & json, bool replaceNames)
 	//std::cout << "Json before encoding:\n" << json.toStyledString();
 	replaceAll(json, decodingMap(), encodedNames(), replaceNames, false);
 	//std::cout << "Json after encoding:\n" << json.toStyledString() << std::endl;
+}
+
+void ColumnEncoder::decodeJsonSafeHtml(Json::Value & json)
+{
+	replaceAll(json, decodingMapSafeHtml(), encodedNames(), true, false);
 }
 
 

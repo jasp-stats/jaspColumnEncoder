@@ -9,10 +9,7 @@
 #include <locale>
 #include <cctype>
 #include <iostream>
-
-typedef std::set<std::string>		stringset;
-typedef std::vector<std::string>	stringvec;
-typedef std::vector<stringvec>		stringvecvec;
+#include "utils.h"
 
 /// This class groups a variety of string related utility functions for use throughout JASP
 /// All functions are inline and here to avoid problems through the mixing of MSVC and GCC on Windows. 
@@ -75,16 +72,28 @@ public:
 		return out.str();
 	}
 
-	inline static std::vector<std::string> splitString(const std::string & str, const char sep = ',')
-	{
-		std::vector<std::string>	vecString;
-		std::string					item;
-		std::stringstream			stringStream(str);
+	inline static std::vector<std::string> split(const std::string & str, const char sep = ',')
+    {
+        stringvec			vecString;
+        std::string			item;
+        std::stringstream	stringStream(str);
 
 		while (std::getline(stringStream, item, sep))
 			vecString.push_back(item);
 
 		return vecString;
+	}
+
+	inline static std::string join(const stringvec & strs, const std::string & sep = ",")
+	{
+		std::stringstream strm;
+
+		unsigned char howFarAreWe = 0;
+		for(const std::string & str : strs)
+			strm << (howFarAreWe++ ? sep : "") << str;
+
+		return strm.str();
+
 	}
 
 	inline static std::string toLower(std::string input)
@@ -109,19 +118,25 @@ public:
 		return input;
 	}
 
-	inline static std::string escapeHtmlStuff(std::string input)
+	inline static std::string escapeHtmlStuff(std::string input, bool doSquareBrackets = false)
 	{
-		input = replaceBy(input,	"&", 				"&amp;"	);
-		input = replaceBy(input,	"<", 				"&lt;"	);
-		input = replaceBy(input,	">", 				"&gt;"	);
-		input = replaceBy(input,	"&lt;sub&gt;",		"<sub>"	);
-		input = replaceBy(input,	"&lt;/sub&gt;",		"</sub>");
-		input = replaceBy(input,	"&lt;sup&gt;",		"<sup>"	);
-		input = replaceBy(input,	"&lt;/sup&gt;",		"</sup>");
-		input = replaceBy(input,	"&lt;b&gt;",		"<b>"	);
-		input = replaceBy(input,	"&lt;/b&gt;",		"</b>"	);
-		input = replaceBy(input,	"&lt;i&gt;",		"<i>"	);
-		input = replaceBy(input,	"&lt;/i&gt;",		"</i>"	);
+		input		= replaceBy(input,	"&", 				"&amp;"	);
+		input		= replaceBy(input,	"<", 				"&lt;"	);
+		input		= replaceBy(input,	">", 				"&gt;"	);
+		input		= replaceBy(input,	"&lt;sub&gt;",		"<sub>"	);
+		input		= replaceBy(input,	"&lt;/sub&gt;",		"</sub>");
+		input		= replaceBy(input,	"&lt;sup&gt;",		"<sup>"	);
+		input		= replaceBy(input,	"&lt;/sup&gt;",		"</sup>");
+		input		= replaceBy(input,	"&lt;b&gt;",		"<b>"	);
+		input		= replaceBy(input,	"&lt;/b&gt;",		"</b>"	);
+		input		= replaceBy(input,	"&lt;i&gt;",		"<i>"	);
+		input		= replaceBy(input,	"&lt;/i&gt;",		"</i>"	);
+		
+		if(doSquareBrackets)
+		{
+			input	= replaceBy(input,	"[", 				"&#x5B;"	);
+			input	= replaceBy(input,	"]", 				"&#x5D;"	);
+		}
 
 		return input;
 	}
@@ -145,23 +160,32 @@ public:
 	// Blatantly taken from https://stackoverflow.com/a/217605
 
 	// trim from start (in place)
-	static inline void ltrim(std::string &s) {
+	static inline std::string ltrim(std::string &s) {
 		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
 			return !std::isspace(ch);
 		}));
+		return s;
 	}
 
 	// trim from end (in place)
-	static inline void rtrim(std::string &s) {
+	static inline std::string rtrim(std::string &s) {
 		s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
 			return !std::isspace(ch);
 		}).base(), s.end());
+		return s;
 	}
 
 	// trim from both ends (in place)
-	static inline void trim(std::string &s) {
+	static inline std::string trim(std::string &s) {
 		ltrim(s);
 		rtrim(s);
+		return s;
+	}
+	
+	static inline std::string trimAndRemoveEscapes(std::string s) {
+		ltrim(s);
+		rtrim(s);
+		return replaceBy(s, "\n", " ");
 	}
 
 	// trim from start (copying)
@@ -204,6 +228,15 @@ public:
 		}
 
 		return useQuotes;
+	}
+	
+	// Counts "first bytes" and thus hopefully code points, adapted from https://stackoverflow.com/a/4063229
+	static inline uint64_t approximateVisualLength(const std::string & in)
+	{
+		uint64_t len = 0;
+		for(const char kar : in)
+			len += (kar & 0xc0) != 0x80;
+		return len;
 	}
 
 private:
