@@ -47,7 +47,8 @@ struct missingEnumVal  : public std::runtime_error
 	std::string							E##ToString(E enumVal);													\
 	const std::map<T, std::string>	&	E##ToStringMap();														\
 	const std::map<std::string, T>	&	E##FromStringMap();														\
-	bool								E##Valid(T value);
+	bool								E##Valid(T value);														\
+	std::vector<E>						E##ToVector();
 
 #define DECLARE_ENUM_METHODS_WITH_TYPE_BASE(E, T, ...)															\
 	std::map<T, std::string>	E##MapName(generateEnumMap<T>(#__VA_ARGS__));									\
@@ -93,7 +94,15 @@ struct missingEnumVal  : public std::runtime_error
 	std::string E##ToString(E enumVal)		{ return ~enumVal; }												\
 	const std::map<T, std::string>	&	E##ToStringMap()		{ return E##MapName;		}					\
 	const std::map<std::string, T>	&	E##FromStringMap()		{ return E##FromNameMap;	}					\
-	bool								E##Valid(T value) { return (E##MapName.find(value) != E##MapName.end()); }
+	bool								E##Valid(T value) { return (E##MapName.find(value) != E##MapName.end()); } \
+	std::vector<E>						E##ToVector()															\
+	{																											\
+		std::vector<E> result;																					\
+		for(auto const& imap : E##MapName)																		\
+			result.push_back((E)imap.first);																		\
+		return result;																							\
+	}
+
 
 #ifdef JASP_USES_QT_HERE
 	#define DECLARE_ENUM_WITH_TYPE_HEADER(E, T, ...)																						\
