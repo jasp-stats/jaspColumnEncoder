@@ -13,7 +13,6 @@
 
 #include "stringutils.h"
 #include <algorithm>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -94,12 +93,13 @@ struct missingEnumVal  : public std::runtime_error
 	std::string E##ToString(E enumVal)		{ return ~enumVal; }												\
 	const std::map<T, std::string>	&	E##ToStringMap()		{ return E##MapName;		}					\
 	const std::map<std::string, T>	&	E##FromStringMap()		{ return E##FromNameMap;	}					\
-	bool								E##Valid(T value) { return (E##MapName.find(value) != E##MapName.end()); } \
+	bool								E##Valid(T value)		{ return E##MapName.count(value); }				\
 	std::vector<E>						E##ToVector()															\
 	{																											\
 		std::vector<E> result;																					\
+		result.reserve(E##MapName.size());																		\
 		for(auto const& imap : E##MapName)																		\
-			result.push_back((E)imap.first);																		\
+			result.push_back(E(imap.first));																		\
 		return result;																							\
 	}
 
@@ -116,7 +116,9 @@ struct missingEnumVal  : public std::runtime_error
 	{																																		\
 		str += E##ToQString(enumTmp);																										\
 		return str;																															\
-	}
+	}																																		\
+	typedef std::vector<E> E##Vec;																											\
+	typedef std::set<E>    E##Set;
 
 #define DECLARE_ENUM_WITH_TYPE_IMPLEMENTATION(E, T, ...)																					\
 	DECLARE_ENUM_METHODS_WITH_TYPE_BASE(E, T, __VA_ARGS__)
