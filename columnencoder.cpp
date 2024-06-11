@@ -536,6 +536,20 @@ ColumnEncoder::colVec ColumnEncoder::columnNamesEncoded()
 
 void ColumnEncoder::encodeColumnNamesinOptions(Json::Value & options)
 {
+	if (options.isObject())
+	{
+		// For variables list the types of each variable are added in the option self.
+		// So that the analyses still work as before, remove these types from the option, and add them in a new option with name '<option mame>.types'
+		for (const std::string& optionName : options.getMemberNames())
+		{
+			if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
+			{
+				options[optionName + ".types"] = options[optionName]["types"];
+				options[optionName] = options[optionName]["value"];
+			}
+		}
+	}
+
 	_encodeColumnNamesinOptions(options, options[".meta"]);
 }
 
