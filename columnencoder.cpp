@@ -129,7 +129,7 @@ std::string ColumnEncoder::decode(const std::string &in)
 	return decodingMap().at(in);
 }
 
-void ColumnEncoder::setCurrentNames(const std::vector<std::string> & names)
+void ColumnEncoder::setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding)
 {
 	//LOGGER << "ColumnEncoder::setCurrentNames(#"<< names.size() << ")" << std::endl;
 
@@ -138,17 +138,35 @@ void ColumnEncoder::setCurrentNames(const std::vector<std::string> & names)
 
 	_encodedNames.clear();
 	_encodedNames.reserve(names.size());
+	
+	size_t runningCounter = 0;
+	
+	_originalNames = names;
 
+	//First normal encoding decoding: (Although im not sure we would ever need those again?)
 	for(size_t col = 0; col < names.size(); col++)
 	{
-		std::string newName			= _encodePrefix + std::to_string(col) + _encodePostfix; //Slightly weird (but R-syntactically valid) name to avoid collisions with user stuff.
+		std::string newName			= _encodePrefix + std::to_string(runningCounter++) + _encodePostfix; //Slightly weird (but R-syntactically valid) name to avoid collisions with user stuff.
 		_encodingMap[names[col]]	= newName;
 		_decodingMap[newName]		= names[col];
 
 		_encodedNames.push_back(newName);
 	}
+	
+	if(generateTypesEncoding)
+		for(size_t col = 0; col < names.size(); col++)
+			for(columnType colType : { columnType::scale, columnType::ordinal, columnType::nominal })
+				{
+					std::string qualifiedName	= names[col] + "." + columnTypeToString(colType),
+								newName			= _encodePrefix + std::to_string(runningCounter++) + _encodePostfix; //Slightly weird (but R-syntactically valid) name to avoid collisions with user stuff.
+					_encodingMap[qualifiedName]	= newName;
+					_decodingMap[newName]		= names[col]; //Decoding is back to the actual name in the data!
+			
+					_encodedNames	.push_back(newName);
+					_originalNames	.push_back(qualifiedName);
+				}
 
-	_originalNames = names;
+	
 	sortVectorBigToSmall(_originalNames);
 	invalidateAll();
 }
@@ -331,7 +349,7 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 
 	static std::regex nonNameChar("[^\\.A-Za-z0-9_]");
 
-	//for now we simply replace any found columnname by its Base64 variant if found
+	//for now we simply replace any found columnname by its encoded variant if found
 	for(const std::string & oldCol : names)
 	{
 		std::string	newCol	= map.at(oldCol);
@@ -480,7 +498,7 @@ void ColumnEncoder::collectExtraEncodingsFromMetaJson(const Json::Value & json, 
 	case Json::objectValue:
 		if(json.isMember("encodeThis"))
 		{
-			if(json["encodeThis"].isString())		
+			if(json["encodeThis"].isString())
 				namesCollected.push_back(json["encodeThis"].asString());
 			else if(json["encodeThis"].isArray())
 				for(const Json::Value & enc : json["encodeThis"])
@@ -534,33 +552,65 @@ ColumnEncoder::colVec ColumnEncoder::columnNamesEncoded()
 }
 
 
-void ColumnEncoder::encodeColumnNamesinOptions(Json::Value & options)
+ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Value & options)
 {
-	_encodeColumnNamesinOptions(options, options[".meta"]);
-}
-
-void ColumnEncoder::_joinValueAndTypesOption(Json::Value & options)
-{
-	if (options.type() != Json::objectValue) return;
-
-	// For variables list the types of each variable are added in the option self.
-	// So that the analyses still work as before, remove these types from the option, and add them in a new option with name '<option mame>.types'
-	for (const std::string& optionName : options.getMemberNames())
+	colsPlusTypes getTheseCols;
+	
+	if (options.isObject())
 	{
 		if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
 		{
-			options[optionName + ".types"] = options[optionName]["types"];
-			options[optionName] = options[optionName]["value"];
+			if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
+			{
+				Json::Value		newOption	=	Json::arrayValue,
+							&	typeList	= options[optionName]["types"],
+								valueList	= options[optionName]["value"];
+
+				bool useSingleVal = false;
+				
+				if(!options[optionName]["value"].isArray())
+				{
+					valueList = Json::arrayValue;
+					valueList.append(options[optionName]["value"].asString());
+
+					useSingleVal = true; //Otherwise we break things like "splitBy" it seems
+				}
+
+				//I wanted to do a sanity check, but actually the data is insane by design atm.
+				// data can be { value: "", types: [] } but also { value: [], types: [] } which is great...
+				//if(typeList.size() != valueList.size())
+				//	std::runtime_error("Expecting the same amount of values and types");
+
+				for(int i=0; i<valueList.size(); i++)
+				{
+					std::string name = valueList[i].asString(),
+								type = typeList.size() > i ? typeList[i].asString() : "";
+
+					if(type == "unknown" || !columnTypeValidName(type))
+						newOption.append(name);
+					else
+					{
+						std::string nameWithType = name + "." + type;
+						newOption.append(nameWithType);
+
+						getTheseCols.insert(std::make_pair(nameWithType, columnTypeFromString(type)));
+					}
+				}
+				
+				options[optionName] = !useSingleVal ? newOption : newOption[0];
+			}
 		}
 	}
+
+	_encodeColumnNamesinOptions(options, options[".meta"]);
+
+	return getTheseCols;
 }
 
 void ColumnEncoder::_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta)
 {
 	if(meta.isNull())
 		return;
-
-	_joinValueAndTypesOption(options);
 	
 	bool	encodePlease	= meta.isObject() && meta.get("shouldEncode",	false).asBool(),
 			isRCode			= meta.isObject() && meta.get("rCode",			false).asBool();

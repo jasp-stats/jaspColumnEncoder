@@ -22,7 +22,7 @@
 #include <vector>
 #include <map>
 #include <set>
-
+#include "columntype.h"
 #ifdef BUILDING_JASP
 #include <json/json.h>
 #else
@@ -35,9 +35,11 @@
 /// It will then also use the columnnames if they are set btw.
 class ColumnEncoder
 {
-	typedef std::map<std::string, std::string>	colMap;
-	typedef std::vector<std::string>			colVec;
-	typedef std::set<ColumnEncoder *>			ColumnEncoders;
+public:
+	typedef std::map<std::string, std::string>					colMap;
+	typedef std::vector<std::string>							colVec;
+	typedef std::set<ColumnEncoder *>							ColumnEncoders;
+	typedef std::set<std::pair<std::string, columnType>>		colsPlusTypes;
 
 private:						ColumnEncoder() { invalidateAll(); }
 public:
@@ -58,7 +60,7 @@ public:
 
 			bool				shouldEncode(const std::string & in);
 			bool				shouldDecode(const std::string & in);
-			void				setCurrentNames(const std::vector<std::string> & names);
+			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding = false);
 			void				setCurrentNamesFromOptionsMeta(const Json::Value & json);
 
 			std::string			encode(const std::string &in);
@@ -82,11 +84,10 @@ public:
 	static	void				decodeJson(Json::Value & json, bool replaceNames = true);
 	static	void				decodeJsonSafeHtml(Json::Value & json);
 
-	static	void				encodeColumnNamesinOptions(Json::Value & options);
+	static	colsPlusTypes		encodeColumnNamesinOptions(Json::Value & options);
 
 private:
-	static	void 				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
-	static	void 				_joinValueAndTypesOption(Json::Value & options);
+	static	void				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
 
 private:
 	static	std::string			replaceAll(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names);
