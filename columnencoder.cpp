@@ -567,39 +567,50 @@ ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Val
 				Json::Value		newOption	=	Json::arrayValue,
 							&	typeList	= options[optionName]["types"],
 								valueList	= options[optionName]["value"];
+
+				bool useSingleVal = false;
 				
 				if(!options[optionName]["value"].isArray())
 				{
 					valueList = Json::arrayValue;
 					valueList.append(options[optionName]["value"].asString());
+
+					useSingleVal = true; //Otherwise we break things like "splitBy" it seems
 				}
-				
-				if(typeList.size() != valueList.size())
-					std::runtime_error("Expecting the same amount of values and types");
-				
-				for(int i=0; i<typeList.size(); i++)
+
+				//I wanted to do a sanity check, but actually the data is insane by design atm.
+				// data can be { value: "", types: [] } but also { value: [], types: [] } which is great...
+				//if(typeList.size() != valueList.size())
+				//	std::runtime_error("Expecting the same amount of values and types");
+
+				for(int i=0; i<valueList.size(); i++)
 				{
 					std::string name = valueList[i].asString(),
-								type = typeList[i].asString();
-					
-					if(type == "unknown" || !columnTypeValidName(type))	
+								type = typeList.size() > i ? typeList[i].asString() : "";
+
+					if(type == "unknown" || !columnTypeValidName(type))
 						newOption.append(name);
 					else
 					{
 						std::string nameWithType = name + "." + type;
 						newOption.append(nameWithType);
-						
+
 						getTheseCols.insert(std::make_pair(nameWithType, columnTypeFromString(type)));
 					}
 				}
 				
-				options[optionName] = newOption;
+				options[optionName] = !useSingleVal ? newOption : newOption[0];
 			}
 		}
 	}
 
+	Log::log () << "After modifying the options we get: \n" << options << "\n\nNow this will be followed by encoding those options." << std::endl;
+
 	_encodeColumnNamesinOptions(options, options[".meta"]);
 	
+
+	Log::log () << "After encoding the options we get: \n" << options	<< std::endl;
+
 	return getTheseCols;
 }
 
