@@ -47,6 +47,7 @@ struct missingEnumVal  : public std::runtime_error
 	const std::map<T, std::string>	&	E##ToStringMap();														\
 	const std::map<std::string, T>	&	E##FromStringMap();														\
 	bool								E##Valid(T value);														\
+	bool								E##ValidName(const std::string & name);									\
 	std::vector<E>						E##ToVector();
 
 #define DECLARE_ENUM_METHODS_WITH_TYPE_BASE(E, T, ...)															\
@@ -91,15 +92,16 @@ struct missingEnumVal  : public std::runtime_error
 		return (E)E##FromNameMap.at(enumName); 																	\
 	}																											\
 	std::string E##ToString(E enumVal)		{ return ~enumVal; }												\
-	const std::map<T, std::string>	&	E##ToStringMap()		{ return E##MapName;		}					\
-	const std::map<std::string, T>	&	E##FromStringMap()		{ return E##FromNameMap;	}					\
-	bool								E##Valid(T value)		{ return E##MapName.count(value); }				\
+	const std::map<T, std::string>	&	E##ToStringMap()						{ return E##MapName;				}	\
+	const std::map<std::string, T>	&	E##FromStringMap()						{ return E##FromNameMap;			}	\
+	bool								E##Valid(T value)						{ return E##MapName.count(value);	}	\
+	bool								E##ValidName(const std::string & name)	{ return E##FromNameMap.count(name);}	\
 	std::vector<E>						E##ToVector()															\
 	{																											\
 		std::vector<E> result;																					\
 		result.reserve(E##MapName.size());																		\
 		for(auto const& imap : E##MapName)																		\
-			result.push_back(E(imap.first));																		\
+			result.push_back(E(imap.first));																	\
 		return result;																							\
 	}
 
