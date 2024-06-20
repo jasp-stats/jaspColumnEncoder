@@ -349,7 +349,7 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 
 	static std::regex nonNameChar("[^\\.A-Za-z0-9_]");
 
-	//for now we simply replace any found columnname by its Base64 variant if found
+	//for now we simply replace any found columnname by its encoded variant if found
 	for(const std::string & oldCol : names)
 	{
 		std::string	newCol	= map.at(oldCol);
