@@ -604,12 +604,7 @@ ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Val
 		}
 	}
 
-	Log::log () << "After modifying the options we get: \n" << options << "\n\nNow this will be followed by encoding those options." << std::endl;
-
 	_encodeColumnNamesinOptions(options, options[".meta"]);
-	
-
-	Log::log () << "After encoding the options we get: \n" << options	<< std::endl;
 
 	return getTheseCols;
 }
