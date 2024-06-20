@@ -586,9 +586,10 @@ ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Val
 						newOption.append(name);
 					else
 					{
-						newOption.append(name + "." + type);
+						std::string nameWithType = name + "." + type;
+						newOption.append(nameWithType);
 						
-						getTheseCols.insert(std::make_pair(name, columnTypeFromString(type)));
+						getTheseCols.insert(std::make_pair(nameWithType, columnTypeFromString(type)));
 					}
 				}
 				
