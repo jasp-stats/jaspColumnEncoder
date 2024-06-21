@@ -536,27 +536,31 @@ ColumnEncoder::colVec ColumnEncoder::columnNamesEncoded()
 
 void ColumnEncoder::encodeColumnNamesinOptions(Json::Value & options)
 {
-	if (options.isObject())
+	_encodeColumnNamesinOptions(options, options[".meta"]);
+}
+
+void ColumnEncoder::_joinValueAndTypesOption(Json::Value & options)
+{
+	if (options.type() != Json::objectValue) return;
+
+	// For variables list the types of each variable are added in the option self.
+	// So that the analyses still work as before, remove these types from the option, and add them in a new option with name '<option mame>.types'
+	for (const std::string& optionName : options.getMemberNames())
 	{
-		// For variables list the types of each variable are added in the option self.
-		// So that the analyses still work as before, remove these types from the option, and add them in a new option with name '<option mame>.types'
-		for (const std::string& optionName : options.getMemberNames())
+		if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
 		{
-			if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
-			{
-				options[optionName + ".types"] = options[optionName]["types"];
-				options[optionName] = options[optionName]["value"];
-			}
+			options[optionName + ".types"] = options[optionName]["types"];
+			options[optionName] = options[optionName]["value"];
 		}
 	}
-
-	_encodeColumnNamesinOptions(options, options[".meta"]);
 }
 
 void ColumnEncoder::_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta)
 {
 	if(meta.isNull())
 		return;
+
+	_joinValueAndTypesOption(options);
 	
 	bool	encodePlease	= meta.isObject() && meta.get("shouldEncode",	false).asBool(),
 			isRCode			= meta.isObject() && meta.get("rCode",			false).asBool();

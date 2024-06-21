@@ -86,6 +86,7 @@ public:
 
 private:
 	static	void 				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
+	static	void 				_joinValueAndTypesOption(Json::Value & options);
 
 private:
 	static	std::string			replaceAll(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names);
