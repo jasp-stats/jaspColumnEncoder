@@ -60,7 +60,7 @@ public:
 
 			bool				shouldEncode(const std::string & in);
 			bool				shouldDecode(const std::string & in);
-			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding = false);
+			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding = true);
 			void				setCurrentNamesFromOptionsMeta(const Json::Value & json);
 
 			std::string			encode(const std::string &in);

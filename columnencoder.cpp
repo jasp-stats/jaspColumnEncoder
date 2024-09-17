@@ -558,48 +558,51 @@ ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Val
 	
 	if (options.isObject())
 	{
-		if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
-		{
+		// For variables list the types of each variable are added in the option self.
+		// So that the analyses still work as before, remove these types from the option, and add them in a new option with name '<option mame>.types'
+		for (const std::string& optionName : options.getMemberNames())
 			if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
 			{
-				Json::Value		newOption	=	Json::arrayValue,
-							&	typeList	= options[optionName]["types"],
-								valueList	= options[optionName]["value"];
-
-				bool useSingleVal = false;
-				
-				if(!options[optionName]["value"].isArray())
+				if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
 				{
-					valueList = Json::arrayValue;
-					valueList.append(options[optionName]["value"].asString());
-
-					useSingleVal = true; //Otherwise we break things like "splitBy" it seems
-				}
-
-				//I wanted to do a sanity check, but actually the data is insane by design atm.
-				// data can be { value: "", types: [] } but also { value: [], types: [] } which is great...
-				//if(typeList.size() != valueList.size())
-				//	std::runtime_error("Expecting the same amount of values and types");
-
-				for(int i=0; i<valueList.size(); i++)
-				{
-					std::string name = valueList[i].asString(),
-								type = typeList.size() > i ? typeList[i].asString() : "";
-
-					if(type == "unknown" || !columnTypeValidName(type))
-						newOption.append(name);
-					else
+					Json::Value		newOption	=	Json::arrayValue,
+								&	typeList	= options[optionName]["types"],
+									valueList	= options[optionName]["value"];
+	
+					bool useSingleVal = false;
+					
+					if(!options[optionName]["value"].isArray())
 					{
-						std::string nameWithType = name + "." + type;
-						newOption.append(nameWithType);
-
-						getTheseCols.insert(std::make_pair(nameWithType, columnTypeFromString(type)));
+						valueList = Json::arrayValue;
+						valueList.append(options[optionName]["value"].asString());
+	
+						useSingleVal = true; //Otherwise we break things like "splitBy" it seems
 					}
+	
+					//I wanted to do a sanity check, but actually the data is insane by design atm.
+					// data can be { value: "", types: [] } but also { value: [], types: [] } which is great...
+					//if(typeList.size() != valueList.size())
+					//	std::runtime_error("Expecting the same amount of values and types");
+	
+					for(int i=0; i<valueList.size(); i++)
+					{
+						std::string name = valueList[i].asString(),
+									type = typeList.size() > i ? typeList[i].asString() : "";
+	
+						if(type == "unknown" || !columnTypeValidName(type))
+							newOption.append(name);
+						else
+						{
+							std::string nameWithType = name + "." + type;
+							newOption.append(nameWithType);
+	
+							getTheseCols.insert(std::make_pair(nameWithType, columnTypeFromString(type)));
+						}
+					}
+					
+					options[optionName] = !useSingleVal ? newOption : newOption[0];
 				}
-				
-				options[optionName] = !useSingleVal ? newOption : newOption[0];
 			}
-		}
 	}
 
 	_encodeColumnNamesinOptions(options, options[".meta"]);
