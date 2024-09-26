@@ -37,6 +37,7 @@ class ColumnEncoder
 {
 public:
 	typedef std::map<std::string, std::string>					colMap;
+	typedef std::map<std::string, columnType>					colTypeMap;	
 	typedef std::vector<std::string>							colVec;
 	typedef std::set<ColumnEncoder *>							ColumnEncoders;
 	typedef std::set<std::pair<std::string, columnType>>		colsPlusTypes;
@@ -66,6 +67,8 @@ public:
 			std::string			encode(const std::string &in);
 			std::string			decode(const std::string &in);
 
+			columnType			columnTypeFromEncoded(const std::string & in);
+
 
 			///Replace all occurences of columnNames in a string by their encoded versions, taking into account the presence of word boundaries and parentheses.
 			std::string			encodeRScript(std::string text, std::set<std::string> * columnNamesFound = nullptr);
@@ -84,7 +87,7 @@ public:
 	static	void				decodeJson(Json::Value & json, bool replaceNames = true);
 	static	void				decodeJsonSafeHtml(Json::Value & json);
 
-	static	colsPlusTypes		encodeColumnNamesinOptions(Json::Value & options);
+	static	colsPlusTypes		encodeColumnNamesinOptions(Json::Value & options, bool preloadingData);
 
 private:
 	static	void				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
@@ -99,6 +102,7 @@ private:
 	static	void				sortVectorBigToSmall(std::vector<std::string> & vec);
 	static	const colMap	&	encodingMap();
 	static	const colMap	&	decodingMap();
+	static	const colTypeMap&	decodingTypes();
 	static	const colMap	&	decodingMapSafeHtml();
 	static	const colVec	&	originalNames();
 	static	const colVec	&	encodedNames();
@@ -106,6 +110,7 @@ private:
 
 	static	bool				_encodingMapInvalidated,
 								_decodingMapInvalidated,
+								_decodingTypeInvalidated,
 								_decoSafeMapInvalidated,
 								_originalNamesInvalidated,
 								_encodedNamesInvalidated;
@@ -117,6 +122,7 @@ private:
 								_decodingMap;
 	colVec						_originalNames,
 								_encodedNames;
+	colTypeMap					_decodingTypes;
 
 	std::string					_encodePrefix  = "JaspColumn_",
 								_encodePostfix = "_Encoded";
