@@ -22,7 +22,7 @@
 #include <vector>
 #include <map>
 #include <set>
-
+#include "columntype.h"
 #ifdef BUILDING_JASP
 #include <json/json.h>
 #else
@@ -35,9 +35,12 @@
 /// It will then also use the columnnames if they are set btw.
 class ColumnEncoder
 {
-	typedef std::map<std::string, std::string>	colMap;
-	typedef std::vector<std::string>			colVec;
-	typedef std::set<ColumnEncoder *>			ColumnEncoders;
+public:
+	typedef std::map<std::string, std::string>					colMap;
+	typedef std::map<std::string, columnType>					colTypeMap;	
+	typedef std::vector<std::string>							colVec;
+	typedef std::set<ColumnEncoder *>							ColumnEncoders;
+	typedef std::set<std::pair<std::string, columnType>>		colsPlusTypes;
 
 private:						ColumnEncoder() { invalidateAll(); }
 public:
@@ -58,11 +61,13 @@ public:
 
 			bool				shouldEncode(const std::string & in);
 			bool				shouldDecode(const std::string & in);
-			void				setCurrentNames(const std::vector<std::string> & names);
+			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding = true);
 			void				setCurrentNamesFromOptionsMeta(const Json::Value & json);
 
 			std::string			encode(const std::string &in);
 			std::string			decode(const std::string &in);
+
+			columnType			columnTypeFromEncoded(const std::string & in);
 
 
 			///Replace all occurences of columnNames in a string by their encoded versions, taking into account the presence of word boundaries and parentheses.
@@ -82,11 +87,10 @@ public:
 	static	void				decodeJson(Json::Value & json, bool replaceNames = true);
 	static	void				decodeJsonSafeHtml(Json::Value & json);
 
-	static	void				encodeColumnNamesinOptions(Json::Value & options);
+	static	colsPlusTypes		encodeColumnNamesinOptions(Json::Value & options, bool preloadingData);
 
 private:
-	static	void 				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
-	static	void 				_joinValueAndTypesOption(Json::Value & options);
+	static	void				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
 
 private:
 	static	std::string			replaceAll(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names);
@@ -98,6 +102,7 @@ private:
 	static	void				sortVectorBigToSmall(std::vector<std::string> & vec);
 	static	const colMap	&	encodingMap();
 	static	const colMap	&	decodingMap();
+	static	const colTypeMap&	decodingTypes();
 	static	const colMap	&	decodingMapSafeHtml();
 	static	const colVec	&	originalNames();
 	static	const colVec	&	encodedNames();
@@ -105,6 +110,7 @@ private:
 
 	static	bool				_encodingMapInvalidated,
 								_decodingMapInvalidated,
+								_decodingTypeInvalidated,
 								_decoSafeMapInvalidated,
 								_originalNamesInvalidated,
 								_encodedNamesInvalidated;
@@ -116,6 +122,7 @@ private:
 								_decodingMap;
 	colVec						_originalNames,
 								_encodedNames;
+	colTypeMap					_decodingTypes;
 
 	std::string					_encodePrefix  = "JaspColumn_",
 								_encodePostfix = "_Encoded";
