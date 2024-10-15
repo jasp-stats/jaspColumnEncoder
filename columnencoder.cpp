@@ -611,7 +611,7 @@ ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Val
 					if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
 					{
 						Json::Value		newOption	=	Json::arrayValue,
-									&	typeList	= options[optionName]["types"],
+										typeList	= options[optionName]["types"],
 										valueList	= options[optionName]["value"];
 						std::string		optionKey	= options[optionName].isMember("optionKey") ? options[optionName]["optionKey"].asString() : "";
 		
@@ -619,12 +619,19 @@ ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Val
 						
 						if(valueList.isString())
 						{
+							std::string val = valueList.asString();
 							valueList = Json::arrayValue;
-							valueList.append(options[optionName]["value"].asString());
+							valueList.append(val);
 		
 							useSingleVal = true; //Otherwise we break things like "splitBy" it seems
 						}
-		
+						if(typeList.isString())
+						{
+							std::string type = typeList.asString();
+							typeList = Json::arrayValue;
+							typeList.append(type);
+						}
+
 						// The valueList can be either;
 						// . a list of strings, if it is a list of variables without interaction
 						// . a list of array of strings if it is a list of variables with interaction
