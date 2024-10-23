@@ -90,6 +90,8 @@ public:
 	static	colsPlusTypes		encodeColumnNamesinOptions(Json::Value & options, bool preloadingData);
 
 private:
+	static	void				_convertPreloadingDataOption(Json::Value & option, const std::string& optionName, colsPlusTypes& colTypes);
+	static	void				_addTypeToColumnNamesInOptionsRecursively(Json::Value & options, bool preloadingData, colsPlusTypes& colTypes);
 	static	void				_encodeColumnNamesinOptions(Json::Value & options, Json::Value & meta);
 
 private:

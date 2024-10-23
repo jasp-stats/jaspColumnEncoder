@@ -582,122 +582,129 @@ ColumnEncoder::colVec ColumnEncoder::columnNamesEncoded()
 	return _columnEncoder ? _columnEncoder->_encodedNames : colVec();
 }
 
-
-ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Value & options, bool preloadingData)
+void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const std::string& optionName, colsPlusTypes& colTypes)
 {
-	colsPlusTypes getTheseCols;
+	Json::Value		newOption	=	Json::arrayValue,
+					typeList	= options[optionName]["types"],
+					valueList	= options[optionName]["value"];
+	std::string		optionKey	= options[optionName].isMember("optionKey") ? options[optionName]["optionKey"].asString() : "";
 
+	bool useSingleVal = false;
+
+	if(valueList.isString())
+	{
+		std::string val = valueList.asString();
+		valueList = Json::arrayValue;
+		valueList.append(val);
+
+		useSingleVal = true; //Otherwise we break things like "splitBy" it seems
+	}
+	if(typeList.isString())
+	{
+		std::string type = typeList.asString();
+		typeList = Json::arrayValue;
+		typeList.append(type);
+	}
+
+	// The valueList can be either;
+	// . a list of strings, if it is a list of variables without interaction
+	// . a list of array of strings if it is a list of variables with interaction
+	// . a list of objects, if the value contains not only the variables but also some extra control values (rowComponent).
+	//   In this case, is has an optionKey that gives where the variable names are.
+	//	 Also here, there can be interaction, so the optionKey can give either a list of strings or a list of array of strings.
+
+	for(int i=0; i<valueList.size(); i++)
+	{
+		Json::Value jsonType		= typeList.size() > i ? typeList[i] : Json::nullValue,
+					jsonValueOrg	= valueList[i],
+					jsonValue		= optionKey.empty() ? jsonValueOrg : jsonValueOrg[optionKey];
+
+		if (jsonValue.isString())
+		{
+			std::string type = (jsonType.isString() ? jsonType.asString() : (jsonType.isArray() && jsonType.size() > 0 && jsonType[0].isString()) ? jsonType[0].asString() : "");
+			bool hasType = type != "unknown" && columnTypeValidName(type);
+			std::string columnNameWithType = jsonValue.asString() + (hasType ? "." + type : "");
+
+			if (optionKey.empty())
+				newOption.append(columnNameWithType);
+			else
+			{
+				// Reuse original jsonValue in order to get the other members of the object
+				jsonValueOrg[optionKey] = columnNameWithType;
+				newOption.append(jsonValueOrg);
+			}
+
+			if (hasType)
+				colTypes.insert(std::make_pair(columnNameWithType, columnTypeFromString(type)));
+		}
+		else if (jsonValue.isArray())
+		{
+			// Value with interaction: there are several column names.
+			Json::Value newColumnNames(Json::arrayValue);
+			int colNr = 0;
+			for (const Json::Value& jsonColumnName : jsonValue)
+			{
+				colNr++;
+				std::string type = jsonType.isString() ? jsonType.asString() : (jsonType.isArray() && jsonType.size() >= colNr && jsonType[colNr-1].isString() ? jsonType[colNr-1].asString() : "");
+				bool hasType = type != "unknown" && columnTypeValidName(type);
+				std::string columnNameWithType = jsonColumnName.asString() + (hasType ? "." + type : "");
+				newColumnNames.append(columnNameWithType);
+
+				if (hasType)
+					colTypes.insert(std::make_pair(columnNameWithType, columnTypeFromString(type)));
+			}
+			if (optionKey.empty())
+				newOption.append(newColumnNames);
+			else
+			{
+				jsonValueOrg[optionKey] = newColumnNames;
+				newOption.append(jsonValueOrg);
+			}
+		}
+		else
+			newOption.append(jsonValueOrg);
+	}
+
+	options[optionName + ".types"] = options[optionName]["types"];
+	options[optionName] = !useSingleVal ? newOption : newOption[0];
+}
+
+void ColumnEncoder::_addTypeToColumnNamesInOptionsRecursively(Json::Value & options, bool preloadingData, colsPlusTypes& colTypes)
+{
 	if (options.isObject())
 	{
-		if(!preloadingData) //make sure "optionname".types is available for analyses incapable of preloadingData, this should be considered deprecated
+		for (const std::string& optionName : options.getMemberNames())
 		{
-			// For variables list the types of each variable are added in the option itself.
-			// To ensure the analyses still work as before, remove these types from the option, and add them in a new option with name '<option mame>.types'
-			// very much deprecated though as analyses should announce being capable of "preloadingData" and then using that instead.
-			for (const std::string& optionName : options.getMemberNames())
+			if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
 			{
-				if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
+				if(preloadingData) //make sure "optionname".types is available for analyses incapable of preloadingData, this should be considered deprecated
+					_convertPreloadingDataOption(options, optionName, colTypes);
+				else
 				{
 					options[optionName + ".types"] = options[optionName]["types"];
 					options[optionName] = options[optionName]["value"];
 				}
 			}
-		}
-		else	//Here we make sure all the requested columns + their types are collected
-		{		// they then are encoded with type included so that everything is accessible easily via those encoded names
-				// some functionality has been added to ask for the type of an encoded column as well.
-			for (const std::string& optionName : options.getMemberNames())
-			{
-				if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
-				{
-					//Log::log() << "Option: " << optionName << " has value & types: " << options[optionName].toStyledString() <<  std::endl;
-					Json::Value		newOption	=	Json::arrayValue,
-									typeList	= options[optionName]["types"],
-									valueList	= options[optionName]["value"];
-					std::string		optionKey	= options[optionName].isMember("optionKey") ? options[optionName]["optionKey"].asString() : "";
-
-					bool useSingleVal = false;
-
-					if(valueList.isString())
-					{
-						std::string val = valueList.asString();
-						valueList = Json::arrayValue;
-						valueList.append(val);
-
-						useSingleVal = true; //Otherwise we break things like "splitBy" it seems
-					}
-					if(typeList.isString())
-					{
-						std::string type = typeList.asString();
-						typeList = Json::arrayValue;
-						typeList.append(type);
-					}
-
-					// The valueList can be either;
-					// . a list of strings, if it is a list of variables without interaction
-					// . a list of array of strings if it is a list of variables with interaction
-					// . a list of objects, if the value contains not only the variables but also some extra control values (rowComponent).
-					//   In this case, is has an optionKey that gives where the variable names are.
-					//	 Also here, there can be interaction, so the optionKey can give either a list of strings or a list of array of strings.
-
-					for(int i=0; i<valueList.size(); i++)
-					{
-						std::string type = typeList.size() > i ? typeList[i].asString() : "";
-						bool hasType = type != "unknown" && columnTypeValidName(type);
-
-						Json::Value jsonValueOrg	= valueList[i],
-									jsonValue		= optionKey.empty() ? jsonValueOrg : jsonValueOrg[optionKey];
-
-						if (jsonValue.isString())
-						{
-							std::string columnNameWithType = jsonValue.asString() + (hasType ? "." + type : "");
-
-							if (optionKey.empty())
-								newOption.append(columnNameWithType);
-							else
-							{
-								// Reuse original jsonValue in order to get the other members of the object
-								jsonValueOrg[optionKey] = columnNameWithType;
-								newOption.append(jsonValueOrg);
-							}
-
-							if (hasType)
-								getTheseCols.insert(std::make_pair(columnNameWithType, columnTypeFromString(type)));
-						}
-						else if (jsonValue.isArray())
-						{
-							// Value with interaction: there are several column names.
-							Json::Value newColumnNames(Json::arrayValue);
-							for (const Json::Value& jsonColumnName : jsonValue)
-							{
-								std::string columnNameWithType = jsonColumnName.asString() + (hasType ? "." + type : "");
-								newColumnNames.append(columnNameWithType);
-
-								if (hasType)
-									getTheseCols.insert(std::make_pair(columnNameWithType, columnTypeFromString(type)));
-							}
-							if (optionKey.empty())
-								newOption.append(newColumnNames);
-							else
-							{
-								jsonValueOrg[optionKey] = newColumnNames;
-								newOption.append(jsonValueOrg);
-							}
-						}
-						else
-							newOption.append(jsonValueOrg);
-					}
-
-					options[optionName] = !useSingleVal ? newOption : newOption[0];
-					//Log::log() << "New option: " << optionName << ": " << options[optionName].toStyledString() << std::endl;
-
-				}
-			}
+			else
+				_addTypeToColumnNamesInOptionsRecursively(options[optionName], preloadingData, colTypes);
 		}
 	}
+	else if (options.isArray())
+	{
+		for (Json::Value& oneOption : options)
+			_addTypeToColumnNamesInOptionsRecursively(oneOption, preloadingData, colTypes);
+	}
+}
+
+ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Value & options, bool preloadingData)
+{
+	colsPlusTypes getTheseCols;
+
+	_addTypeToColumnNamesInOptionsRecursively(options, preloadingData, getTheseCols);
 
 	_encodeColumnNamesinOptions(options, options[".meta"]);
 
+	Log::log() << "Options after encoding: " << options.toStyledString() << std::endl;
 	return getTheseCols;
 }
 
@@ -718,12 +725,18 @@ void ColumnEncoder::_encodeColumnNamesinOptions(Json::Value & options, Json::Val
 		else if(meta.type() == Json::arrayValue)
 			for(int i=0; i<options.size() && i < meta.size(); i++)
 				_encodeColumnNamesinOptions(options[i], meta[i]);
-		
+
 		else if(isRCode)
+		{
 			for(int i=0; i<options.size(); i++)
 				if(options[i].isString())
 					options[i] = columnEncoder()->encodeRScript(options[i].asString());
-	
+		}
+		else if(meta.type() == Json::objectValue) // The option is an array, and the meta is an object: each option element in the array must be encoded with the same meta
+			for(int i=0; i<options.size(); i++)
+				_encodeColumnNamesinOptions(options[i], meta);
+
+
 		return;
 
 	case Json::objectValue:
