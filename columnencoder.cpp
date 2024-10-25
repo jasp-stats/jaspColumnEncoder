@@ -623,7 +623,8 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 		{
 			std::string type = (jsonType.isString() ? jsonType.asString() : (jsonType.isArray() && jsonType.size() > 0 && jsonType[0].isString()) ? jsonType[0].asString() : "");
 			bool hasType = type != "unknown" && columnTypeValidName(type);
-			std::string columnNameWithType = jsonValue.asString() + (hasType ? "." + type : "");
+			std::string columnName = jsonValue.asString();
+			std::string columnNameWithType = columnName.empty() ? "" : (columnName + (hasType ? "." + type : ""));
 
 			if (optionKey.empty())
 				newOption.append(columnNameWithType);
@@ -634,7 +635,7 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 				newOption.append(jsonValueOrg);
 			}
 
-			if (hasType)
+			if (!columnNameWithType.empty() && hasType)
 				colTypes.insert(std::make_pair(columnNameWithType, columnTypeFromString(type)));
 		}
 		else if (jsonValue.isArray())
@@ -647,10 +648,11 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 				colNr++;
 				std::string type = jsonType.isString() ? jsonType.asString() : (jsonType.isArray() && jsonType.size() >= colNr && jsonType[colNr-1].isString() ? jsonType[colNr-1].asString() : "");
 				bool hasType = type != "unknown" && columnTypeValidName(type);
-				std::string columnNameWithType = jsonColumnName.asString() + (hasType ? "." + type : "");
+				std::string columnName = jsonColumnName.asString();
+				std::string columnNameWithType = columnName.empty() ? "" : (columnName + (hasType ? "." + type : ""));
 				newColumnNames.append(columnNameWithType);
 
-				if (hasType)
+				if (!columnNameWithType.empty() && hasType)
 					colTypes.insert(std::make_pair(columnNameWithType, columnTypeFromString(type)));
 			}
 			if (optionKey.empty())
@@ -701,6 +703,8 @@ ColumnEncoder::colsPlusTypes ColumnEncoder::encodeColumnNamesinOptions(Json::Val
 	colsPlusTypes getTheseCols;
 
 	_addTypeToColumnNamesInOptionsRecursively(options, preloadingData, getTheseCols);
+
+	//LOGGER << "Options before encoding: " << options.toStyledString() << std::endl;
 
 	_encodeColumnNamesinOptions(options, options[".meta"]);
 
