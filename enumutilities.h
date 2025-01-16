@@ -48,7 +48,9 @@ struct missingEnumVal  : public std::runtime_error
 	const std::map<std::string, T>	&	E##FromStringMap();														\
 	bool								E##Valid(T value);														\
 	bool								E##ValidName(const std::string & name);									\
-	std::vector<E>						E##ToVector();
+	std::vector<E>						E##ToVector();															\
+	typedef std::vector<E>				E##Vec;																	\
+	typedef std::set<E>					E##Set;
 
 #define DECLARE_ENUM_METHODS_WITH_TYPE_BASE(E, T, ...)															\
 	std::map<T, std::string>	E##MapName(generateEnumMap<T>(#__VA_ARGS__));									\
@@ -118,9 +120,7 @@ struct missingEnumVal  : public std::runtime_error
 	{																																		\
 		str += E##ToQString(enumTmp);																										\
 		return str;																															\
-	}																																		\
-	typedef std::vector<E> E##Vec;																											\
-	typedef std::set<E>    E##Set;
+	}
 
 #define DECLARE_ENUM_WITH_TYPE_IMPLEMENTATION(E, T, ...)																					\
 	DECLARE_ENUM_METHODS_WITH_TYPE_BASE(E, T, __VA_ARGS__)

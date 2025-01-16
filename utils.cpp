@@ -27,10 +27,8 @@
 #include <utime.h>
 #endif
 
-
+#include <cmath>
 #include "utilenums.h"
-#include <codecvt>
-#include <regex>
 #include <iomanip>
 #include <chrono>
 
