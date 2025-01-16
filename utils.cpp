@@ -253,22 +253,22 @@ std::wstring Utils::getShortPathWin(const std::wstring & longPath)
 {
 	//See: https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getshortpathnamew
 	long     length = 0;
-	TCHAR*   buffer = NULL;
+	WCHAR*   buffer = NULL;
 
 // First obtain the size needed by passing NULL and 0.
 
-	length = GetShortPathName(longPath.c_str(), NULL, 0);
+	length = GetShortPathNameW(longPath.c_str(), NULL, 0);
 	if (length == 0) 
 		return longPath;
 
 // Dynamically allocate the correct size 
 // (terminating null char was included in length)
 
-	buffer = new TCHAR[length];
+	buffer = new WCHAR[length];
 
 // Now simply call again using same long path.
 
-	length = GetShortPathName(longPath.c_str(), buffer, length);
+	length = GetShortPathNameW(longPath.c_str(), buffer, length);
 	if (length == 0)
 	{
 		delete[] buffer;
