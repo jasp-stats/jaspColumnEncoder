@@ -128,7 +128,7 @@ long Utils::getFileModificationTime(const std::string &filename)
 #endif
 }
 
-long Utils::getFileSize(const string &filename)
+int64_t Utils::getFileSize(const string &filename)
 {
 	std::error_code ec;
 	std::filesystem::path path;
