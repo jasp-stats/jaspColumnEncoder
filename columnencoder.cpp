@@ -517,6 +517,11 @@ void ColumnEncoder::setCurrentNamesFromOptionsMeta(const Json::Value & options)
 	setCurrentNames(namesFound);
 }
 
+void ColumnEncoder::setCurrentColumnTypePerName(const colTypeMap &theMap)
+{
+	_dataSetTypes = theMap;
+}
+
 void ColumnEncoder::collectExtraEncodingsFromMetaJson(const Json::Value & json, std::vector<std::string> & namesCollected) const
 {
 	switch(json.type())
@@ -623,7 +628,14 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 		{
 			std::string type = (jsonType.isString() ? jsonType.asString() : (jsonType.isArray() && jsonType.size() > 0 && jsonType[0].isString()) ? jsonType[0].asString() : "");
 			bool hasType = type != "unknown" && columnTypeValidName(type);
+
 			std::string columnName = jsonValue.asString();
+			if(!hasType && columnName != "" && _columnEncoder->_dataSetTypes.count(columnName))
+			{
+				type = columnTypeToString(_columnEncoder->_dataSetTypes.at(columnName));
+				hasType = type != "unknown";
+			}
+
 			std::string columnNameWithType = columnName.empty() ? "" : (columnName + (hasType ? "." + type : ""));
 
 			if (optionKey.empty())
@@ -649,6 +661,13 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 				std::string type = jsonType.isString() ? jsonType.asString() : (jsonType.isArray() && jsonType.size() >= colNr && jsonType[colNr-1].isString() ? jsonType[colNr-1].asString() : "");
 				bool hasType = type != "unknown" && columnTypeValidName(type);
 				std::string columnName = jsonColumnName.asString();
+
+				if(!hasType && columnName != "" && _columnEncoder->_dataSetTypes.count(columnName))
+				{
+					type = columnTypeToString(_columnEncoder->_dataSetTypes.at(columnName));
+					hasType = type != "unknown";
+				}
+
 				std::string columnNameWithType = columnName.empty() ? "" : (columnName + (hasType ? "." + type : ""));
 				newColumnNames.append(columnNameWithType);
 
@@ -679,9 +698,9 @@ void ColumnEncoder::_addTypeToColumnNamesInOptionsRecursively(Json::Value & opti
 		{
 			if (options[optionName].isObject() && options[optionName].isMember("value") && options[optionName].isMember("types"))
 			{
-				if(preloadingData) //make sure "optionname".types is available for analyses incapable of preloadingData, this should be considered deprecated
+				if(preloadingData)
 					_convertPreloadingDataOption(options, optionName, colTypes);
-				else
+				else //make sure "optionnam	e".types is available for analyses incapable of preloadingData, this should be considered deprecated
 				{
 					options[optionName + ".types"] = options[optionName]["types"];
 					options[optionName] = options[optionName]["value"];

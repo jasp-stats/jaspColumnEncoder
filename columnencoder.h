@@ -52,6 +52,7 @@ public:
 	static	bool				isColumnName(const std::string & in)							{ return columnEncoder()->shouldEncode(in); }
 	static	bool				isEncodedColumnName(const std::string & in)						{ return columnEncoder()->shouldDecode(in); }
 	static	void				setCurrentColumnNames(const std::vector<std::string> & names)	{ columnEncoder()->setCurrentNames(names);	}
+	static	void				setCurrentColTypePerName(const colTypeMap & theMap)				{ columnEncoder()->setCurrentColumnTypePerName(theMap);	}
 
 	static	std::string			replaceColumnNamesInRScript(const std::string & rCode, const std::map<std::string, std::string> & changedNames);
 	static	std::string			removeColumnNamesFromRScript(const std::string & rCode, const std::vector<std::string> & colsToRemove);
@@ -63,6 +64,7 @@ public:
 			bool				shouldDecode(const std::string & in);
 			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding = true);
 			void				setCurrentNamesFromOptionsMeta(const Json::Value & json);
+			void				setCurrentColumnTypePerName(const colTypeMap & theMap);
 
 			std::string			encode(const std::string &in);
 			std::string			decode(const std::string &in);
@@ -124,7 +126,8 @@ private:
 								_decodingMap;
 	colVec						_originalNames,
 								_encodedNames;
-	colTypeMap					_decodingTypes;
+	colTypeMap					_decodingTypes,
+								_dataSetTypes;
 
 	std::string					_encodePrefix  = "JaspColumn_",
 								_encodePostfix = "_Encoded";
