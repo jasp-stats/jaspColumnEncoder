@@ -373,12 +373,33 @@ std::string ColumnEncoder::encodeRScript(std::string text, std::set<std::string>
 	return encodeRScript(text, encodingMap(), originalNames(), columnNamesFound);
 }
 
-std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, std::set<std::string> * columnNamesFound)
+std::string ColumnEncoder::encodeRScript(std::string text, std::map<std::string, std::set<std::string>>& prefixedColumnsFound, const std::vector<std::string>& allowedPrefixes)
+{
+	auto prefixes = allowedPrefixes;
+	prefixedColumnsFound.clear();
+	prefixes.insert(prefixes.begin(), "");
+	for(auto& prefix : prefixes) {
+		std::set<std::string> columnNamesFound;
+		text = encodeRScript(text, encodingMap(), originalNames(), &columnNamesFound, prefix);
+		prefixedColumnsFound.insert({prefix, columnNamesFound});
+	}
+	return text;
+}
+
+
+std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, std::set<std::string> * columnNamesFound, const std::string acceptedPrefix)
 {
 	if(columnNamesFound)
 		columnNamesFound->clear();
 
 	static std::regex nonNameChar("[^\\.A-Za-z0-9_]");
+	auto testPrefix = [&](size_t pos) -> bool
+	{
+		if(acceptedPrefix == "") return false;
+		try { return text.substr(pos - acceptedPrefix.length(), acceptedPrefix.length()) == acceptedPrefix; }
+		catch(std::out_of_range e){}
+		return false;
+	};
 
 	//for now we simply replace any found columnname by its encoded variant if found
 	for(const std::string & oldCol : names)
@@ -392,8 +413,11 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 		{
 			size_t foundPosEnd = foundPos + oldCol.length();
 
+			if(acceptedPrefix != "" && !testPrefix(foundPos))
+				continue;
+
 			//First check if it is a "free columnname" aka is there some space or a kind in front of it. We would not want to replace a part of another term (Imagine what happens when you use a columname such as "E" and a filter that includes the term TRUE, it does not end well..)
-			bool startIsFree	= foundPos == 0					|| std::regex_match(text.substr(foundPos - 1, 1),	nonNameChar);
+			bool startIsFree	= foundPos == 0					|| std::regex_match(text.substr(foundPos - 1, 1),	nonNameChar) || testPrefix(foundPos);
 			bool endIsFree		= foundPosEnd == text.length()	|| std::regex_match(text.substr(foundPosEnd, 1),	nonNameChar);
 
 			//Check for "(" as well because maybe someone has a columnname such as rep or if or something weird like that. This might however have some whitespace in between...
