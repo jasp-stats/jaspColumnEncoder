@@ -373,7 +373,12 @@ std::string ColumnEncoder::encodeRScript(std::string text, std::set<std::string>
 	return encodeRScript(text, encodingMap(), originalNames(), columnNamesFound);
 }
 
-std::string ColumnEncoder::encodeRScript(std::string text, std::map<std::string, std::set<std::string>>& prefixedColumnsFound, const std::vector<std::string>& allowedPrefixes)
+/*!
+ * \brief Replace column names with encoded column names.
+ * \param allowedPrefixes Specifies all prefix that column names may have and still be seen as columns names. e.g. "data.<column_name>"
+ * \return Original string with column names replaced by encoded column names
+ */
+std::string ColumnEncoder::encodeRScript(std::string text, std::map<std::string, std::set<std::string>>& prefixedColumnsFound, const std::set<std::string>& allowedPrefixes)
 {
 	auto prefixes = allowedPrefixes;
 	prefixedColumnsFound.clear();
@@ -386,19 +391,45 @@ std::string ColumnEncoder::encodeRScript(std::string text, std::map<std::string,
 	return text;
 }
 
-
-std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, std::set<std::string> * columnNamesFound, const std::string acceptedPrefix)
+/*!
+ * \brief Replace column names with encoded column names.
+ * \param mandatoryPrefix Specifies a prefix that column names SHOULD have in order to be replaced/encoded. We skip all names matches that lack this prefix. Default ""/empty_string means that all variables will be replaced.
+ * \return Original string with column names replaced by encoded column names
+ */
+std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, std::set<std::string> * columnNamesFound, const std::string& mandatoryPrefix)
 {
 	if(columnNamesFound)
 		columnNamesFound->clear();
 
 	static std::regex nonNameChar("[^\\.A-Za-z0-9_]");
-	auto testPrefix = [&](size_t pos) -> bool
+
+	//Some lambas to test if Column names matches are free and not just a substr of some other expression.
+	auto testStartWhiteSpace = [&](size_t pos) -> bool
 	{
-		if(acceptedPrefix == "") return false;
-		try { return text.substr(pos - acceptedPrefix.length(), acceptedPrefix.length()) == acceptedPrefix; }
+		return pos == 0 || std::regex_match(text.substr(pos - 1, 1),	nonNameChar);
+	};
+	auto testFreePrefix = [&](size_t pos) -> bool
+	{
+		if(mandatoryPrefix == "") return false;
+		try {
+			bool match = text.substr(pos - mandatoryPrefix.length(), mandatoryPrefix.length()) == mandatoryPrefix;
+			if(match) return testStartWhiteSpace(pos - mandatoryPrefix.length()); //Must still be free before prefix
+		}
 		catch(std::out_of_range e){}
 		return false;
+	};
+	auto testEndFree = [&](size_t pos) -> bool
+	{
+		bool endIsFree = pos == text.length() || std::regex_match(text.substr(pos, 1),	nonNameChar);
+
+		//Check for "(" as well because maybe someone has a columnname such as rep or if or something weird like that. This might however have some whitespace in between...
+		bool keepGoing = true;
+		for(size_t bracePos = pos; bracePos < text.size() && endIsFree && keepGoing; bracePos++)
+			if(text[bracePos] == '(')
+				endIsFree = false;
+			else if(text[bracePos] != '\t' && text[bracePos] != ' ')
+				keepGoing = false; //Aka something else than whitespace or a brace and that means that we can replace it!
+		return endIsFree;
 	};
 
 	//for now we simply replace any found columnname by its encoded variant if found
@@ -413,32 +444,22 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 		{
 			size_t foundPosEnd = foundPos + oldCol.length();
 
-			if(acceptedPrefix != "" && !testPrefix(foundPos))
+			bool hasFreePrefix = testFreePrefix(foundPos);
+			if(mandatoryPrefix != "" && !hasFreePrefix) // simply skip if the var did not have mandatoryPrefix
 				continue;
 
-			//First check if it is a "free columnname" aka is there some space or a kind in front of it. We would not want to replace a part of another term (Imagine what happens when you use a columname such as "E" and a filter that includes the term TRUE, it does not end well..)
-			bool startIsFree	= foundPos == 0					|| std::regex_match(text.substr(foundPos - 1, 1),	nonNameChar) || testPrefix(foundPos);
-			bool endIsFree		= foundPosEnd == text.length()	|| std::regex_match(text.substr(foundPosEnd, 1),	nonNameChar);
-
-			//Check for "(" as well because maybe someone has a columnname such as rep or if or something weird like that. This might however have some whitespace in between...
-			bool keepGoing = true;
-
-			for(size_t bracePos = foundPosEnd; bracePos < text.size() && endIsFree && keepGoing; bracePos++)
-				if(text[bracePos] == '(')
-					endIsFree = false;
-				else if(text[bracePos] != '\t' && text[bracePos] != ' ')
-					keepGoing = false; //Aka something else than whitespace or a brace and that means that we can replace it!
+			//check if it is a "free columnname" aka is there some space or a kind in front of it. We would not want to replace a part of another term (Imagine what happens when you use a columname such as "E" and a filter that includes the term TRUE, it does not end well..)
+			bool startIsFree	= hasFreePrefix || testStartWhiteSpace(foundPos);
+			bool endIsFree		= testEndFree(foundPosEnd);
 
 			if(startIsFree && endIsFree)
 			{
 				text.replace(foundPos, oldCol.length(), newCol);
-
 				if(columnNamesFound)
 					columnNamesFound->insert(oldCol);
 			}
 		}
 	}
-
 	return text;
 }
 
