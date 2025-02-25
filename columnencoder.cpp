@@ -380,12 +380,15 @@ std::string ColumnEncoder::encodeRScript(std::string text, std::set<std::string>
  */
 std::string ColumnEncoder::encodeRScript(std::string text, std::map<std::string, std::set<std::string>>& prefixedColumnsFound, const std::set<std::string>& allowedPrefixes)
 {
-	stringvec prefixes = allowedPrefixes;
-	std::sort(prefixes.begin(), prefixes.end(), [](const std::string & l, const std::string & r){ return l.size() < r.size();  }
+	stringvec prefixes(allowedPrefixes.begin(), allowedPrefixes.end());
+	
+	std::sort(prefixes.begin(), prefixes.end(), [](const std::string & l, const std::string & r){ return l.size() < r.size();  });
+	prefixes.insert(prefixes.begin(), ""); //empty first
+	
 	prefixedColumnsFound.clear();
-	prefixes.insert(prefixes.begin(), "");
+	
 	for(auto& prefix : prefixes) {
-		std::set<std::string> columnNamesFound;
+		stringset columnNamesFound;
 		text = encodeRScript(text, encodingMap(), originalNames(), &columnNamesFound, prefix);
 		prefixedColumnsFound.insert({prefix, columnNamesFound});
 	}
@@ -409,6 +412,7 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 	{
 		return pos == 0 || std::regex_match(text.substr(pos - 1, 1),	nonNameChar);
 	};
+	
 	auto testFreePrefix = [&](size_t pos) -> bool
 	{
 		if(mandatoryPrefix == "") return false;
@@ -419,6 +423,7 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 		catch(std::out_of_range e){}
 		return false;
 	};
+	
 	auto testEndFree = [&](size_t pos) -> bool
 	{
 		bool endIsFree = pos == text.length() || std::regex_match(text.substr(pos, 1),	nonNameChar);
