@@ -380,7 +380,8 @@ std::string ColumnEncoder::encodeRScript(std::string text, std::set<std::string>
  */
 std::string ColumnEncoder::encodeRScript(std::string text, std::map<std::string, std::set<std::string>>& prefixedColumnsFound, const std::set<std::string>& allowedPrefixes)
 {
-	auto prefixes = allowedPrefixes;
+	stringvec prefixes = allowedPrefixes;
+	std::sort(prefixes.begin(), prefixes.end(), [](const std::string & l, const std::string & r){ return l.size() < r.size();  }
 	prefixedColumnsFound.clear();
 	prefixes.insert(prefixes.begin(), "");
 	for(auto& prefix : prefixes) {
