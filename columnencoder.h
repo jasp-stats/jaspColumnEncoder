@@ -74,7 +74,8 @@ public:
 
 			///Replace all occurences of columnNames in a string by their encoded versions, taking into account the presence of word boundaries and parentheses.
 			std::string			encodeRScript(std::string text, std::set<std::string> * columnNamesFound = nullptr);
-			std::string			encodeRScript(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, std::set<std::string> * columnNamesFound = nullptr);
+			std::string			encodeRScript(std::string text, std::map<std::string, std::set<std::string>>& prefixedColumnsFound, const std::set<std::string>& allowedPrefixes);
+			std::string			encodeRScript(std::string text, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, std::set<std::string> * columnNamesFound = nullptr, const std::string& acceptedPrefix = "");
 
 			///Replace all occurences of columnNames in a string by their encoded versions, regardless of word boundaries or parentheses.
 	static	std::string			encodeAll(const std::string & text) { return replaceAll(text, encodingMap(), originalNames()); }
