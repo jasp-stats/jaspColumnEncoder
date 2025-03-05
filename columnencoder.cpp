@@ -408,7 +408,7 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 	static std::regex nonNameChar("[^\\.A-Za-z0-9_]");
 
 	//Some lambas to test if Column names matches are free and not just a substr of some other expression.
-	auto testStartWhiteSpace = [&](size_t pos) -> bool
+	auto testNonNameChar = [&](size_t pos) -> bool
 	{
 		return pos == 0 || std::regex_match(text.substr(pos - 1, 1),	nonNameChar);
 	};
@@ -418,7 +418,7 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 		if(mandatoryPrefix == "") return false;
 		try {
 			bool match = text.substr(pos - mandatoryPrefix.length(), mandatoryPrefix.length()) == mandatoryPrefix;
-			if(match) return testStartWhiteSpace(pos - mandatoryPrefix.length()); //Must still be free before prefix
+			if(match) return testNonNameChar(pos - mandatoryPrefix.length()); //Must still be free before prefix
 		}
 		catch(std::out_of_range e){}
 		return false;
@@ -455,7 +455,7 @@ std::string ColumnEncoder::encodeRScript(std::string text, const std::map<std::s
 				continue;
 
 			//check if it is a "free columnname" aka is there some space or a kind in front of it. We would not want to replace a part of another term (Imagine what happens when you use a columname such as "E" and a filter that includes the term TRUE, it does not end well..)
-			bool startIsFree	= hasFreePrefix || testStartWhiteSpace(foundPos);
+			bool startIsFree	= hasFreePrefix || testNonNameChar(foundPos);
 			bool endIsFree		= testEndFree(foundPosEnd);
 
 			if(startIsFree && endIsFree)
