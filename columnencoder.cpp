@@ -640,10 +640,11 @@ ColumnEncoder::colVec ColumnEncoder::columnNamesEncoded()
 
 void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const std::string& optionName, colsPlusTypes& colTypes)
 {
-	Json::Value		newOption	=	Json::arrayValue,
-					typeList	= options[optionName]["types"],
-					valueList	= options[optionName]["value"];
 	std::string		optionKey	= options[optionName].isMember("optionKey") ? options[optionName]["optionKey"].asString() : "";
+	bool			keepOriginalOption = (!optionKey.empty() && options[optionName].size() > 3); // The option has other members: this must be kept
+	Json::Value		typeList	= options[optionName]["types"],
+					valueList	= options[optionName]["value"],
+					newOption	= keepOriginalOption ? options[optionName] : Json::arrayValue;
 
 	bool useSingleVal = false;
 
@@ -662,6 +663,9 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 		typeList.append(type);
 	}
 
+	if (keepOriginalOption)
+		newOption[optionKey] = Json::arrayValue;
+
 	// The valueList can be either;
 	// . a list of strings, if it is a list of variables without interaction
 	// . a list of array of strings if it is a list of variables with interaction
@@ -673,7 +677,7 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 	{
 		Json::Value jsonType		= typeList.size() > i ? typeList[i] : Json::nullValue,
 					jsonValueOrg	= valueList[i],
-					jsonValue		= optionKey.empty() ? jsonValueOrg : jsonValueOrg[optionKey];
+					jsonValue		= (optionKey.empty() || keepOriginalOption || !jsonValueOrg.isMember(optionKey)) ? jsonValueOrg : jsonValueOrg[optionKey];
 
 		if (jsonValue.isString())
 		{
@@ -691,6 +695,8 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 
 			if (optionKey.empty())
 				newOption.append(columnNameWithType);
+			else if (keepOriginalOption)
+				newOption[optionKey].append(columnNameWithType);
 			else
 			{
 				// Reuse original jsonValue in order to get the other members of the object
@@ -727,6 +733,8 @@ void ColumnEncoder::_convertPreloadingDataOption(Json::Value & options, const st
 			}
 			if (optionKey.empty())
 				newOption.append(newColumnNames);
+			else if (keepOriginalOption)
+				newOption[optionKey].append(newColumnNames);
 			else
 			{
 				jsonValueOrg[optionKey] = newColumnNames;
@@ -751,10 +759,15 @@ void ColumnEncoder::_addTypeToColumnNamesInOptionsRecursively(Json::Value & opti
 			{
 				if(preloadingData)
 					_convertPreloadingDataOption(options, optionName, colTypes);
-				else //make sure "optionnam	e".types is available for analyses incapable of preloadingData, this should be considered deprecated
+				else //make sure "optionname".types is available for analyses incapable of preloadingData, this should be considered deprecated
 				{
 					options[optionName + ".types"] = options[optionName]["types"];
-					options[optionName] = options[optionName]["value"];
+
+					std::string		optionKey			= options[optionName].isMember("optionKey") ? options[optionName]["optionKey"].asString() : "";
+					bool			keepOriginalOption	= (!optionKey.empty() && options[optionName].size() > 3); // The option has other members: this must be kept
+
+					if (!keepOriginalOption)
+						options[optionName] = options[optionName]["value"];
 				}
 			}
 			else
