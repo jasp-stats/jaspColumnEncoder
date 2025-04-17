@@ -161,15 +161,15 @@ public:
 
 	// trim from start (in place)
 	static inline std::string ltrim(std::string &s) {
-		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-			return !std::isspace(ch);
+		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+			return !std::isspace(ch);	// see:https://en.cppreference.com/w/cpp/string/byte/isspace
 		}));
 		return s;
 	}
 
 	// trim from end (in place)
 	static inline std::string rtrim(std::string &s) {
-		s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+		s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
 			return !std::isspace(ch);
 		}).base(), s.end());
 		return s;
