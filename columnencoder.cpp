@@ -72,11 +72,10 @@ ColumnEncoder::ColumnEncoder(const std::map<std::string, std::string> & decodeDi
 	: _encodePrefix("JASPColumn_"), _encodePostfix("_For_Replacement")
 {
 
-	std::vector<std::string> originalNames;
-	originalNames.reserve(decodeDifferently.size());
+	colTypeMap originalNames;
 
 	for(const auto & oriNew : decodeDifferently)
-		originalNames.push_back(oriNew.first);
+		originalNames[oriNew.first] = columnType::unknown;
 
 	setCurrentNames(originalNames);
 
@@ -139,44 +138,48 @@ columnType ColumnEncoder::columnTypeFromEncoded(const std::string &in)
 	return decodingTypes().at(in);
 }
 
-void ColumnEncoder::setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding)
+void ColumnEncoder::setCurrentNames(const colTypeMap & namesWithTypes)
 {
 	//LOGGER << "ColumnEncoder::setCurrentNames(#"<< names.size() << ")" << std::endl;
 
 	_encodingMap.clear();
 	_decodingMap.clear();
-
 	_encodedNames.clear();
-	_encodedNames.reserve(names.size());
+	_encodedNames.reserve(namesWithTypes.size() * 4);
+
+	_dataSetTypes = namesWithTypes;
 	
 	size_t runningCounter = 0;
 	
-	_originalNames = names;
-
-	//First normal encoding decoding: (Although im not sure we would ever need those again?)
-	for(size_t col = 0; col < names.size(); col++)
+	for (const auto & it : namesWithTypes)
 	{
-		std::string newName			= _encodePrefix + std::to_string(runningCounter++) + _encodePostfix; //Slightly weird (but R-syntactically valid) name to avoid collisions with user stuff.
-		_encodingMap[names[col]]	= newName;
-		_decodingMap[newName]		= names[col];
+		_originalNames.push_back(it.first);
+		std::string mainEncodedName		= _encodePrefix + std::to_string(runningCounter++) + _encodePostfix; //Slightly weird (but R-syntactically valid) name to avoid collisions with user stuff.
 
-		_encodedNames.push_back(newName);
+		_encodingMap[it.first]			= mainEncodedName;
+		_decodingMap[mainEncodedName]	= it.first;
+		_encodedNames					.push_back(mainEncodedName);
+
+		for(columnType colType : { columnType::scale, columnType::ordinal, columnType::nominal })
+		{
+			std::string qualifiedName	= it.first + "." + columnTypeToString(colType);
+			_originalNames.push_back(qualifiedName);
+
+			if (colType == it.second)
+			{
+				_encodingMap[qualifiedName]			= mainEncodedName; // Use the same encoding
+				_decodingTypes[mainEncodedName]		= colType;
+			}
+			else
+			{
+				std::string encodedName				= _encodePrefix + std::to_string(runningCounter++) + _encodePostfix; //Slightly weird (but R-syntactically valid) name to avoid collisions with user stuff.
+				_encodingMap[qualifiedName]			= encodedName;
+				_decodingMap[encodedName]			= it.first; //Decoding is back to the actual name in the data!
+				_encodedNames						.push_back(encodedName);
+				_decodingTypes[encodedName]			= colType;
+			}
+		}
 	}
-	
-	if(generateTypesEncoding)
-		for(size_t col = 0; col < names.size(); col++)
-			for(columnType colType : { columnType::scale, columnType::ordinal, columnType::nominal })
-				{
-					std::string qualifiedName	= names[col] + "." + columnTypeToString(colType),
-								newName			= _encodePrefix + std::to_string(runningCounter++) + _encodePostfix; //Slightly weird (but R-syntactically valid) name to avoid collisions with user stuff.
-					_encodingMap[qualifiedName]	= newName;
-					_decodingMap[newName]		= names[col]; //Decoding is back to the actual name in the data!
-					_decodingTypes[newName]		= colType;
-			
-					_encodedNames	.push_back(newName);
-					_originalNames	.push_back(qualifiedName);
-				}
-
 	
 	sortVectorBigToSmall(_originalNames);
 	invalidateAll();
@@ -560,7 +563,7 @@ void ColumnEncoder::replaceAll(Json::Value & json, const std::map<std::string, s
 
 void ColumnEncoder::setCurrentNamesFromOptionsMeta(const Json::Value & options)
 {
-	std::vector<std::string> namesFound;
+	colTypeMap namesFound;
 
 	if(!options.isNull() && options.isMember(".meta"))
 		collectExtraEncodingsFromMetaJson(options[".meta"], namesFound);
@@ -568,12 +571,7 @@ void ColumnEncoder::setCurrentNamesFromOptionsMeta(const Json::Value & options)
 	setCurrentNames(namesFound);
 }
 
-void ColumnEncoder::setCurrentColumnTypePerName(const colTypeMap &theMap)
-{
-	_dataSetTypes = theMap;
-}
-
-void ColumnEncoder::collectExtraEncodingsFromMetaJson(const Json::Value & json, std::vector<std::string> & namesCollected) const
+void ColumnEncoder::collectExtraEncodingsFromMetaJson(const Json::Value & json, colTypeMap & namesCollected) const
 {
 	switch(json.type())
 	{
@@ -586,10 +584,10 @@ void ColumnEncoder::collectExtraEncodingsFromMetaJson(const Json::Value & json, 
 		if(json.isMember("encodeThis"))
 		{
 			if(json["encodeThis"].isString())
-				namesCollected.push_back(json["encodeThis"].asString());
+				namesCollected[json["encodeThis"].asString()] = columnType::unknown;
 			else if(json["encodeThis"].isArray())
 				for(const Json::Value & enc : json["encodeThis"])
-					namesCollected.push_back(enc.asString());
+					namesCollected[enc.asString()] = columnType::unknown;
 		}
 		else
 			for(const std::string & optionName : json.getMemberNames())

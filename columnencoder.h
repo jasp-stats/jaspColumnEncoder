@@ -51,8 +51,7 @@ public:
 
 	static	bool				isColumnName(const std::string & in)							{ return columnEncoder()->shouldEncode(in); }
 	static	bool				isEncodedColumnName(const std::string & in)						{ return columnEncoder()->shouldDecode(in); }
-	static	void				setCurrentColumnNames(const std::vector<std::string> & names)	{ columnEncoder()->setCurrentNames(names);	}
-	static	void				setCurrentColTypePerName(const colTypeMap & theMap)				{ columnEncoder()->setCurrentColumnTypePerName(theMap);	}
+	static	void				setCurrentColumnNames(const colTypeMap & names)					{ columnEncoder()->setCurrentNames(names);	}
 
 	static	std::string			replaceColumnNamesInRScript(const std::string & rCode, const std::map<std::string, std::string> & changedNames);
 	static	std::string			removeColumnNamesFromRScript(const std::string & rCode, const std::vector<std::string> & colsToRemove);
@@ -62,9 +61,8 @@ public:
 
 			bool				shouldEncode(const std::string & in);
 			bool				shouldDecode(const std::string & in);
-			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding = true);
+			void				setCurrentNames(const colTypeMap & names);
 			void				setCurrentNamesFromOptionsMeta(const Json::Value & json);
-			void				setCurrentColumnTypePerName(const colTypeMap & theMap);
 
 			std::string			encode(const std::string &in);
 			std::string			decode(const std::string &in);
@@ -103,7 +101,7 @@ private:
 
 	static	void				replaceAll(Json::Value & json, const std::map<std::string, std::string> & map, const std::vector<std::string> & names, bool replaceNames, bool replaceStrict);
 	static	std::vector<size_t>	getPositionsColumnNameMatches(const std::string & text, const std::string & columnName);
-			void				collectExtraEncodingsFromMetaJson(const Json::Value & in, std::vector<std::string> & namesCollected) const;
+			void				collectExtraEncodingsFromMetaJson(const Json::Value & in, colTypeMap & namesCollected) const;
 	static	void				sortVectorBigToSmall(std::vector<std::string> & vec);
 	static	const colMap	&	encodingMap();
 	static	const colMap	&	decodingMap();
