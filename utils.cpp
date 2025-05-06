@@ -73,17 +73,17 @@ const string &Utils::currentDateTime()
 	return currentDateTimeCache;
 }
 
-long Utils::currentMillis()
+int64_t Utils::currentMillis()
 {
 	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-long Utils::currentSeconds()
+int64_t Utils::currentSeconds()
 {
 	return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-long Utils::getFileModificationTime(const std::string &filename)
+int64_t Utils::getFileModificationTime(const std::string &filename)
 {
 #ifdef _WIN32
 

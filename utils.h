@@ -54,10 +54,10 @@ public:
 	static Utils::FileType			getTypeFromFileName(	const std::string &path);
 
 	static const std::string &		currentDateTime();
-	static long						currentMillis();
-	static long						currentSeconds();
-	static long						getFileModificationTime(const std::string &filename);
-	static int64_t						getFileSize(			const std::string &filename);  // see: https://github.com/jasp-stats/jasp-issues/issues/3191
+	static int64_t					currentMillis();
+	static int64_t					currentSeconds();
+	static int64_t					getFileModificationTime(const std::string &filename);
+	static int64_t					getFileSize(			const std::string &filename);  // see: https://github.com/jasp-stats/jasp-issues/issues/3191
 	static void						touch(					const std::string &filename);
 	static bool						renameOverwrite(		const std::string &oldName, const std::string &newName);
 	static bool						removeFile(				const std::string &path);
