@@ -138,6 +138,24 @@ columnType ColumnEncoder::columnTypeFromEncoded(const std::string &in)
 	return decodingTypes().at(in);
 }
 
+void ColumnEncoder::setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding)
+{
+	//This will not give the desired result for data from the dataset, but setCurrentColumnTypePerName will fix it!
+	//This function is only meant to make sure old versions of jaspBase still work
+
+	colTypeMap map;
+
+	for(auto & name : names)
+		map[name] = columnType::unknown;
+
+	setCurrentNames(map);
+}
+
+void ColumnEncoder::setCurrentColumnTypePerName(const colTypeMap &theMap)
+{
+	setCurrentNames(theMap);
+}
+
 void ColumnEncoder::setCurrentNames(const colTypeMap & namesWithTypes)
 {
 	//LOGGER << "ColumnEncoder::setCurrentNames(#"<< names.size() << ")" << std::endl;
