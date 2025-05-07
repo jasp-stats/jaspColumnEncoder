@@ -66,7 +66,7 @@ public:
 			bool				shouldEncode(const std::string & in);
 			bool				shouldDecode(const std::string & in);
 			void				setCurrentNames(const colTypeMap & names);
-			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding);	///< Do not use! Deprecated
+			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding=true);	///< Do not use! Deprecated
 			void				setCurrentColumnTypePerName(const colTypeMap & theMap);									///< Do not use! Deprecated
 			void				setCurrentNamesFromOptionsMeta(const Json::Value & json);
 
