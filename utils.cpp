@@ -22,6 +22,13 @@
 #include <windows.h>
 #include <fileapi.h>
 #include <winternl.h>
+#ifdef BUILDING_JASP
+#include "log.h"
+#define LOGGER Log::log()
+#else
+#include <Rcpp.h>
+#define LOGGER Rcpp::Rcout
+#endif
 #else
 #include <sys/stat.h>
 #include <utime.h>
@@ -31,6 +38,7 @@
 #include "utilenums.h"
 #include <iomanip>
 #include <chrono>
+
 
 using namespace std;
 
@@ -90,8 +98,11 @@ int64_t Utils::getFileModificationTime(const std::string &filename)
 	HANDLE file = CreateFileA(filename.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (file == INVALID_HANDLE_VALUE)
+	{
+		LOGGER << "Utils::getFileModificationTime(" << filename << ") failed to open the file!" << std::endl;
 		return -1;
-
+	}
+	
 	FILETIME modTime;
 
 	bool success = GetFileTime(file, NULL, NULL, &modTime);
@@ -150,7 +161,10 @@ void Utils::touch(const string &filename)
 	HANDLE file = CreateFileA(filename.c_str(), FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (file == INVALID_HANDLE_VALUE)
+	{
+		LOGGER << "Utils::touch(" << filename << ") failed to open the file!" << std::endl;
 		return;
+	}
 
 	FILETIME ft;
 	SYSTEMTIME st;
