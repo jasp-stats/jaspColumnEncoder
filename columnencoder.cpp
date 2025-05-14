@@ -160,6 +160,7 @@ void ColumnEncoder::setCurrentNames(const colTypeMap & namesWithTypes)
 {
 	//LOGGER << "ColumnEncoder::setCurrentNames(#"<< names.size() << ")" << std::endl;
 
+	_originalNames.clear();
 	_encodingMap.clear();
 	_decodingMap.clear();
 	_encodedNames.clear();
