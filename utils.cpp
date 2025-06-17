@@ -22,13 +22,6 @@
 #include <windows.h>
 #include <fileapi.h>
 #include <winternl.h>
-#ifdef BUILDING_JASP
-#include "log.h"
-#define LOGGER Log::log()
-#else
-#include <Rcpp.h>
-#define LOGGER Rcpp::Rcout
-#endif
 #else
 #include <sys/stat.h>
 #include <utime.h>
@@ -39,6 +32,13 @@
 #include <iomanip>
 #include <chrono>
 
+#ifdef BUILDING_JASP
+#include "log.h"
+#define LOGGER Log::log()
+#else
+#include <Rcpp.h>
+#define LOGGER Rcpp::Rcout
+#endif
 
 using namespace std;
 
@@ -184,7 +184,50 @@ void Utils::touch(const string &filename)
 	newTime.actime = newTimeT;
 	newTime.modtime = newTimeT;
 
-	utime(filename.c_str(), &newTime);
+	int error = utime(filename.c_str(), &newTime);
+	
+	static auto errorLog = [filename](const std::string & error)
+	{
+		LOGGER << "Utils::touch(" << filename << ") failed with error: " << error << std::endl;
+	};
+	
+	switch(error)
+	{
+	case EACCES:		
+		errorLog("Search permission is denied by a component of the path prefix; or the times argument is a null pointer and the effective user ID of the process does not match the owner of the file, the process does not have write permission for the file, and the process does not have appropriate privileges."); 
+		break;
+		
+	case ELOOP:		
+		errorLog("A loop exists in symbolic links encountered during resolution of the path argument.\n"
+				 "Or: more than {SYMLOOP_MAX} symbolic links were encountered during resolution of the path argument.");
+		break;
+	
+	case ENAMETOOLONG:		
+		errorLog("The length of the path argument exceeds {PATH_MAX} or a pathname component is longer than {NAME_MAX}.\n"
+				"Or: as a result of encountering a symbolic link in resolution of the path argument, the length of the substituted pathname string exceeded {PATH_MAX}."); 
+		break;
+		
+	case ENOENT:		
+			errorLog("A component of path does not name an existing file or path is an empty string."); 
+		break;
+			
+	case ENOTDIR:		
+			errorLog("A component of the path prefix is not a directory."); 
+		break;
+			
+	case EPERM:		
+			errorLog("The times argument is not a null pointer and the calling process' effective user ID does not match the owner of the file and the calling process does not have the appropriate privileges."); 
+		break;
+			
+	case EROFS:		
+			errorLog("The file system containing the file is read-only."); 
+		break;
+			
+	default:
+		if(error > 0)
+			errorLog("Some unknown error (" + std::to_string(error) + ") occurred..."); 
+		break;
+	}
 #endif
 }
 
