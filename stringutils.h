@@ -204,6 +204,11 @@ public:
 	{
 		return line.size() >= startsWithThis.size() && line.substr(0, startsWithThis.size()) == startsWithThis;
 	}
+	
+	static inline bool endsWith(const std::string & line, const std::string & endsWithThis)
+	{
+		return line.size() >= endsWithThis.size() && line.substr(line.size() - endsWithThis.size()) == endsWithThis;
+	}
 
 	static inline bool escapeValue(std::string &value)
 	{
