@@ -52,6 +52,7 @@ public:
 	static	bool				isColumnName(const std::string & in)							{ return columnEncoder()->shouldEncode(in); }
 	static	bool				isEncodedColumnName(const std::string & in)						{ return columnEncoder()->shouldDecode(in); }
 	static	void				setCurrentColumnNames(const colTypeMap & names)					{ columnEncoder()->setCurrentNames(names);	}
+	static	void				updateColumnTypesOnlyStatic(const colTypeMap & names)			{ columnEncoder()->updateColumnTypesOnly(names);	}
 
 	//backwards compat:
 	static	void				setCurrentColumnNames(const std::vector<std::string> & names)	{ columnEncoder()->setCurrentNames(names);	}
@@ -66,6 +67,7 @@ public:
 			bool				shouldEncode(const std::string & in);
 			bool				shouldDecode(const std::string & in);
 			void				setCurrentNames(const colTypeMap & names);
+			void				updateColumnTypesOnly(const colTypeMap & names);
 			void				setCurrentNames(const std::vector<std::string> & names, bool generateTypesEncoding=true);	///< Do not use! Deprecated
 			void				setCurrentColumnTypePerName(const colTypeMap & theMap);									///< Do not use! Deprecated
 			void				setCurrentNamesFromOptionsMeta(const Json::Value & json);

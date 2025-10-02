@@ -205,6 +205,20 @@ void ColumnEncoder::setCurrentNames(const colTypeMap & namesWithTypes)
 	invalidateAll();
 }
 
+void ColumnEncoder::updateColumnTypesOnly(const colTypeMap &namesWithTypes)
+{
+	_dataSetTypes = namesWithTypes;
+	
+	for (const auto & nameType : namesWithTypes)
+		if(nameType.second != columnType::unknown)
+		{
+			std::string qualifiedName		= nameType.first + "." + columnTypeToString(nameType.second);
+			_encodingMap[nameType.first]	= _encodingMap[qualifiedName];
+		}
+	
+	invalidateAll();
+}
+
 void ColumnEncoder::sortVectorBigToSmall(std::vector<std::string> & vec)
 {
 	std::sort(vec.begin(), vec.end(), [](std::string & a, std::string & b) { return a.size() > b.size(); }); //We need this to make sure smaller columnNames do not bite chunks off of larger ones
