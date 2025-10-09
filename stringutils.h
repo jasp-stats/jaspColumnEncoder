@@ -17,7 +17,7 @@
 class stringUtils
 {
 public:    
-	inline static std::string stripRComments(const std::string & rCode)
+	inline static std::string stripRComments(const std::string & rCode, bool stripStrings = false)
 	{
 		std::stringstream out;
 
@@ -40,8 +40,14 @@ public:
 			case status::R:
 				switch(kar)
 				{
-				case '\'':	curStatus = status::SingleStr;	break;
-				case '"':	curStatus = status::DoubleStr;	break;
+				case '\'':	
+					curStatus	= status::SingleStr;	
+					pushMe		= !stripStrings;
+					break;
+				case '"':	
+					curStatus	= status::DoubleStr;	
+					pushMe		= !stripStrings;
+					break;
 				case '#':
 					curStatus	= status::Comment;
 					pushMe		= false;
@@ -57,11 +63,15 @@ public:
 			case status::SingleStr:
 				if(kar == '\'' && rCode[r - 1] != '\\')
 					curStatus = status::R;
+				else if(stripStrings)
+					pushMe = false;
 				break;
 
 			case status::DoubleStr:
 				if(kar == '"' && rCode[r - 1] != '\\')
 					curStatus = status::R;
+				else if(stripStrings)
+					pushMe = false;
 				break;
 			}
 
